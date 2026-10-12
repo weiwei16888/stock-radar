@@ -47,36 +47,54 @@
           <button @click="loadData" class="px-2.5 py-1 bg-slate-800 text-slate-300 text-xs rounded-lg border border-slate-700 hover:bg-slate-700">🔄 重新整理</button>
         </div>
 
-        <!-- 搜尋列 -->
+        <!-- 搜尋框 -->
         <div class="relative">
           <input v-model="searchQuery" type="text" placeholder="🔍 搜尋股票代號或名稱 (例如: 6155 或 鈞寶)" 
                  class="w-full bg-[#131822] border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400/60 placeholder-slate-500 font-mono">
           <button v-if="searchQuery" @click="searchQuery = ''" class="absolute right-3 top-3 text-xs text-slate-500">✕</button>
         </div>
 
-        <!-- 搜尋個股詳細頁面 -->
+        <!-- 個股詳細頁面 -->
         <div v-if="searchQuery.trim()" class="space-y-3">
           <div v-if="selectedStock" class="bg-[#131822] border border-amber-500/40 rounded-2xl p-4 space-y-4 shadow-xl">
+            <!-- 頂部：股票代號與行業族群 (免費) -->
             <div class="flex justify-between items-start">
               <div>
                 <div class="flex items-center gap-2">
                   <span class="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">{{ selectedStock.market }}</span>
+                  <span class="text-xs font-bold px-2 py-0.5 bg-slate-800 text-amber-300 rounded border border-slate-700">{{ selectedStock.category }}</span>
                   <span class="text-xs text-slate-400 font-mono">{{ selectedStock.code }}</span>
                 </div>
-                <h2 class="text-2xl font-black text-white mt-1">{{ selectedStock.name }} <span class="text-xs font-normal px-2 py-0.5 bg-slate-800 text-slate-300 rounded">被動元件</span></h2>
+                <h2 class="text-2xl font-black text-white mt-1.5">{{ selectedStock.name }}</h2>
               </div>
               <button @click="toggleFavorite(selectedStock.code)" class="text-xs px-3 py-1.5 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/30">
                 {{ isFavorite(selectedStock.code) ? '📌 已在追蹤' : '➕ 追蹤個股' }}
               </button>
             </div>
 
-            <!-- 當日行情與漲跌幅卡片 -->
-            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
-              <span class="text-slate-400">當日漲跌</span>
-              <span class="font-bold text-sm font-mono text-white">{{ selectedStock.price }} <span :class="selectedStock.change >= 0 ? 'text-rose-400' : 'text-emerald-400'">({{ selectedStock.change_pct }})</span></span>
+            <!-- 近 30 日走勢 K 線與成交量圖 (免費) -->
+            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 space-y-2">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-slate-400 font-bold">📈 近 30 日股價走勢與成交量 (K線)</span>
+                <span class="font-mono text-white font-bold">{{ selectedStock.price }} <span :class="selectedStock.change >= 0 ? 'text-rose-400' : 'text-emerald-400'">({{ selectedStock.change_pct }})</span></span>
+              </div>
+              
+              <!-- SVG 簡化 K 線繪製 -->
+              <svg viewBox="0 0 300 90" class="w-full h-24 overflow-visible">
+                <path d="M0,45 Q75,30 150,55 T300,25" fill="none" stroke="#eab308" stroke-width="1.2" opacity="0.7"/>
+                <g v-for="(k, i) in (selectedStock.kline || []).slice(0, 30)" :key="i">
+                  <line :x1="i * 10 + 4" :y1="80 - (k.h - 50) * 0.8" :x2="i * 10 + 4" :y2="80 - (k.l - 50) * 0.8" 
+                        :stroke="k.c >= k.o ? '#f43f5e' : '#10b981'" stroke-width="1" />
+                  <rect :x="i * 10 + 1.5" :y="80 - (Math.max(k.o, k.c) - 50) * 0.8" width="5" 
+                        :height="Math.max(2, Math.abs(k.c - k.o) * 0.8)" 
+                        :fill="k.c >= k.o ? '#f43f5e' : '#10b981'" />
+                  <rect :x="i * 10 + 2" :y="90 - (k.v / 50000) * 20" width="4" :height="(k.v / 50000) * 20" 
+                        :fill="k.c >= k.o ? '#f43f5e88' : '#10b98188'" />
+                </g>
+              </svg>
             </div>
 
-            <!-- 當日法人買賣超分項 -->
+            <!-- 當日三大法人買賣超 (免費) -->
             <div class="grid grid-cols-3 gap-2">
               <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800/80 text-center">
                 <div class="text-[10px] text-slate-400">外資當日</div>
@@ -98,44 +116,69 @@
               </div>
             </div>
 
-            <!-- 近 5 日 / 20 日累積 -->
-            <div class="grid grid-cols-2 gap-2.5">
-              <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
-                <div class="text-[11px] text-slate-400">近 5 日買賣超</div>
-                <div :class="selectedStock.net_5d >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-sm mt-0.5 font-mono">
-                  {{ selectedStock.net_5d >= 0 ? '+' : '' }}{{ selectedStock.net_5d }} 億
-                </div>
+            <!-- ================= VIP 專屬區：法人均價 / 融資均價 / 資金停留 ================= -->
+            <div class="bg-[#0b0e14] p-3.5 rounded-xl border border-slate-800 space-y-3.5">
+              <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
+                <span class="text-amber-400 font-bold flex items-center gap-1">🔒 VIP 專屬進階指標</span>
+                <span class="text-[10px] text-slate-500">可自選 1~30 天計算</span>
               </div>
-              <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
-                <div class="text-[11px] text-slate-400">近 20 日累計</div>
-                <div :class="selectedStock.net_20d >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-sm mt-0.5 font-mono">
-                  {{ selectedStock.net_20d >= 0 ? '+' : '' }}{{ selectedStock.net_20d }} 億
-                </div>
-              </div>
-            </div>
 
-            <!-- VIP 進階指標卡片 -->
-            <div class="bg-[#0b0e14] p-3.5 rounded-xl border border-slate-800 space-y-3">
+              <!-- 自選天數選擇拉桿 (1~30 天，僅 VIP 可操作) -->
+              <div v-if="isVip" class="space-y-1.5 bg-[#131822] p-2.5 rounded-lg border border-slate-800">
+                <div class="flex justify-between text-[11px]">
+                  <span class="text-slate-400">選擇計算天數 (1~30天)：</span>
+                  <span class="text-amber-300 font-bold font-mono">近 {{ customDays }} 天</span>
+                </div>
+                <input v-model="customDays" type="range" min="1" max="30" class="w-full accent-amber-500 cursor-pointer">
+              </div>
+
+              <!-- VIP 1: 法人累積買賣超 -->
               <div class="flex justify-between items-center text-xs">
-                <span class="text-slate-400">法人 20 日均價</span>
-                <span v-if="isVip" class="text-slate-200 font-mono font-bold">{{ selectedStock.avg_cost_20d }}</span>
+                <span class="text-slate-300">近 {{ customDays }} 日法人累積金額</span>
+                <span v-if="isVip" :class="calcNetAccumulated(selectedStock, customDays) >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-mono font-bold text-sm">
+                  {{ calcNetAccumulated(selectedStock, customDays) >= 0 ? '+' : '' }}{{ calcNetAccumulated(selectedStock, customDays) }} 億
+                </span>
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
+
+              <!-- VIP 2: 法人均價 (需要 VIP) -->
               <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
-                <span class="text-slate-400">融資 20 日均價</span>
-                <span v-if="isVip" class="text-slate-200 font-mono font-bold">{{ selectedStock.margin_cost_20d }}</span>
+                <span class="text-slate-300">法人近 {{ customDays }} 日成交均價</span>
+                <span v-if="isVip" class="text-slate-200 font-mono font-bold">{{ calcAvgCost(selectedStock, customDays, 1.02) }} 元</span>
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
+
+              <!-- VIP 3: 融資均價 (需要 VIP) -->
               <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
-                <span class="text-slate-400">外資持股比率</span>
+                <span class="text-slate-300">融資近 {{ customDays }} 日成交均價</span>
+                <span v-if="isVip" class="text-slate-200 font-mono font-bold">{{ calcAvgCost(selectedStock, customDays, 0.97) }} 元</span>
+                <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
+              </div>
+
+              <!-- VIP 4: 外資持股比率 -->
+              <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
+                <span class="text-slate-300">外資持股比率 (每日更新)</span>
                 <span v-if="isVip" class="text-slate-200 font-mono font-bold">{{ selectedStock.foreign_ratio }}</span>
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
+
+              <!-- VIP 5: 資金停留時間與自動分析 (需要 VIP) -->
               <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
-                <span class="text-slate-400">資金停留 / 動向</span>
-                <span v-if="isVip" class="text-rose-400 font-bold">{{ selectedStock.flow_status }}</span>
+                <span class="text-slate-300">資金停留與籌碼動向</span>
+                <span v-if="isVip" :class="selectedStock.flow_type === '流入' ? 'text-rose-400' : 'text-emerald-400'" class="font-bold">
+                  法人合計連續{{ selectedStock.flow_type }} {{ selectedStock.flow_days }} 天
+                </span>
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
+            </div>
+
+            <!-- 教學說明卡片 (免費) -->
+            <div class="bg-[#0b0e14] p-3.5 rounded-xl border border-slate-800 space-y-1.5 text-xs">
+              <div class="font-bold text-amber-300 flex items-center gap-1">💡 怎麼看懂這張表？</div>
+              <p class="text-slate-400 text-[11px] leading-relaxed">
+                • <strong>法人買賣超</strong>：代表外資與投信當日淨買入或賣出的金額，正值越高越有利拉升。<br>
+                • <strong>均價線 (VIP)</strong>：若當前股價高於「法人均價」，代表三大法人目前處於獲利賺錢狀態，後續支撐力道較強。
+              </p>
             </div>
           </div>
           <div v-else class="text-center py-8 text-slate-500 text-xs bg-[#131822] rounded-2xl border border-slate-800">
@@ -143,15 +186,13 @@
           </div>
         </div>
 
-        <!-- 主頁儀表板 -->
+        <!-- 情境 B：主頁預設大盤儀表板 -->
         <div v-else class="space-y-4">
-          <!-- 1. 今日大盤與籌碼總結 -->
           <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3 shadow-lg">
             <div class="flex justify-between items-center">
               <h3 class="text-xs font-bold text-amber-400 tracking-wider">今日焦點盤態</h3>
               <span class="text-[10px] text-slate-400 font-mono">大盤情緒：51 中性</span>
             </div>
-            
             <div class="grid grid-cols-2 gap-2 text-xs">
               <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800/80">
                 <span class="text-slate-400 text-[11px]">法人買最多產業</span>
@@ -162,49 +203,16 @@
                 <div class="text-rose-400 font-bold text-sm mt-0.5">鴻海 <span class="text-xs">+34億</span></div>
               </div>
             </div>
-
-            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800/80 text-xs space-y-1">
-              <div class="text-amber-300 font-bold flex items-center gap-1">🤖 AI 盤後籌碼動向速報</div>
-              <p class="text-slate-300 leading-relaxed text-[11px]">
-                台股今日微幅收低 0.02%。三大法人與主力大戶買超集中於銀行金融與電子權值股。AI 伺服器與被動元件族群資金呈現穩健流入。
-              </p>
-            </div>
           </div>
 
-          <!-- 2. 板塊資金熱區預覽 -->
-          <div class="bg-[#131822] border border-slate-800 rounded-2xl p-4 space-y-3">
-            <div class="flex justify-between items-center">
-              <h3 class="text-sm font-bold text-white flex items-center gap-1.5">🌐 熱門板塊資金淨流入排行</h3>
-              <button @click="currentTab = 'bubbles'" class="text-xs text-amber-400">看全部 ›</button>
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-xs">
-              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
-                <span class="text-slate-300 font-medium">銀行金融</span>
-                <span class="text-rose-400 font-mono font-bold">+87.4億</span>
-              </div>
-              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
-                <span class="text-slate-300 font-medium">貨櫃航運</span>
-                <span class="text-rose-400 font-mono font-bold">+46.5億</span>
-              </div>
-              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
-                <span class="text-slate-300 font-medium">被動元件</span>
-                <span class="text-rose-400 font-mono font-bold">+20.9億</span>
-              </div>
-              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
-                <span class="text-slate-300 font-medium">晶圓代工</span>
-                <span class="text-rose-400 font-mono font-bold">+17.5億</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. 原創籌碼策略排行列表 -->
+          <!-- 原創策略主題 -->
           <div class="bg-[#131822] border border-slate-800 rounded-2xl p-4 space-y-3">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
               <h3 class="text-sm font-bold text-rose-400 flex items-center gap-1.5">⚡ 雙主力法人籌碼共振 (外資+ 投信+)</h3>
               <span class="text-xs text-slate-400 font-mono">共 {{ list1.length }} 檔</span>
             </div>
             <div class="space-y-2">
-              <div v-for="s in list1" :key="s.code" @click="searchQuery = s.code" class="flex justify-between items-center bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-amber-500/50">
+              <div v-for="s in list1" :key="s.code" @click="searchQuery = s.code" class="flex justify-between items-center bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 cursor-pointer">
                 <div>
                   <span class="text-xs text-slate-400 font-mono mr-1.5">{{ s.code }}</span>
                   <span class="text-sm font-bold text-slate-200">{{ s.name }}</span>
@@ -216,54 +224,44 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 2：資金熱圖 (全面免費開放瀏覽) ================= -->
-      <main v-if="currentTab === 'bubbles'" class="p-3 space-y-4 flex-1">
+      <!-- ================= 分頁 2：資金熱圖 (展開產業細項股票與排名 - 完全免費) ================= -->
+      <main v-if="currentTab === 'bubbles'" class="p-3 space-y-3 flex-1">
         <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3">
           <div class="flex justify-between items-center">
-            <h2 class="text-base font-bold text-white flex items-center gap-1.5">🌐 全產業資金流向熱熱區</h2>
+            <h2 class="text-base font-bold text-white flex items-center gap-1.5">🌐 產業資金流向與個股排名</h2>
             <span class="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 font-bold rounded">免費觀看</span>
           </div>
-          <p class="text-xs text-slate-400">即時追蹤台股各大核心產業供應鏈資金進出與流向強度：</p>
-          
+          <p class="text-xs text-slate-400">點擊產業可展開檢視該族群成分股之法人買超金額與排名：</p>
+
           <div class="space-y-2.5 pt-1">
-            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center">
-              <div>
-                <div class="text-sm font-bold text-white">🏦 銀行金融族群</div>
-                <div class="text-[10px] text-slate-400">主力資金持續流入 · 創 20 日新高</div>
+            <div v-for="(stocksInCat, catName) in groupedCategories" :key="catName" class="bg-[#0b0e14] rounded-xl border border-slate-800 overflow-hidden">
+              <div @click="toggleCat(catName)" class="p-3.5 flex justify-between items-center cursor-pointer hover:bg-slate-800/40">
+                <div>
+                  <div class="text-sm font-bold text-white flex items-center gap-1.5">
+                    <span>{{ getCatIcon(catName) }}</span> {{ catName }} 族群
+                  </div>
+                  <div class="text-[10px] text-slate-400 mt-0.5">包含 {{ stocksInCat.length }} 檔成分股</div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-rose-400 font-mono font-bold text-sm">+{{ calcCatTotal(stocksInCat) }} 億</span>
+                  <span class="text-slate-500 text-xs">{{ expandedCat === catName ? '▲' : '▼' }}</span>
+                </div>
               </div>
-              <span class="text-rose-400 font-mono font-bold text-sm">+87.4 億</span>
-            </div>
 
-            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center">
-              <div>
-                <div class="text-sm font-bold text-white">🚢 貨櫃航運族群</div>
-                <div class="text-[10px] text-slate-400">外資大幅加碼布局</div>
+              <!-- 點開展開產業細項成分股與排名 -->
+              <div v-if="expandedCat === catName" class="bg-[#131822] p-3 border-t border-slate-800/80 space-y-2">
+                <div class="text-[11px] text-slate-400 font-bold mb-1">【{{ catName }}】成分股買超排行榜：</div>
+                <div v-for="(st, idx) in stocksInCat" :key="st.code" @click="searchQuery = st.code; currentTab = 'today'" class="flex justify-between items-center p-2 rounded-lg bg-[#0b0e14] border border-slate-800 cursor-pointer">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-amber-400 font-mono w-4">第{{ idx + 1 }}名</span>
+                    <span class="text-xs font-bold text-white">{{ st.name }}</span>
+                    <span class="text-[10px] text-slate-400 font-mono">{{ st.code }}</span>
+                  </div>
+                  <span :class="st.total_net >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-mono font-bold text-xs">
+                    {{ st.total_net >= 0 ? '+' : '' }}{{ st.total_net }} 億
+                  </span>
+                </div>
               </div>
-              <span class="text-rose-400 font-mono font-bold text-sm">+46.5 億</span>
-            </div>
-
-            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center">
-              <div>
-                <div class="text-sm font-bold text-white">🔌 被動元件族群 (如 6155 鈞寶)</div>
-                <div class="text-[10px] text-slate-400">法人投信連續防禦卡位</div>
-              </div>
-              <span class="text-rose-400 font-mono font-bold text-sm">+20.9 億</span>
-            </div>
-
-            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center">
-              <div>
-                <div class="text-sm font-bold text-white">💻 晶圓代工與封測族群</div>
-                <div class="text-[10px] text-slate-400">AI 晶片供應鏈穩健調節</div>
-              </div>
-              <span class="text-rose-400 font-mono font-bold text-sm">+17.5 億</span>
-            </div>
-
-            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center">
-              <div>
-                <div class="text-sm font-bold text-white">📡 5G 連接器與通訊網通</div>
-                <div class="text-[10px] text-slate-400">內資買盤小幅淨流入</div>
-              </div>
-              <span class="text-rose-400 font-mono font-bold text-sm">+9.8 億</span>
             </div>
           </div>
         </div>
@@ -441,6 +439,8 @@
         const stocks = ref({});
         const searchQuery = ref('');
         const favorites = ref(['6155', '2330']);
+        const customDays = ref(5);
+        const expandedCat = ref('銀行金融');
 
         const isRegisterMode = ref(false);
         const loginEmail = ref('');
@@ -475,6 +475,47 @@
           const q = searchQuery.value.trim().toLowerCase();
           return Object.values(stocks.value).find(s => s.code.toLowerCase().includes(q) || s.name.toLowerCase().includes(q));
         });
+
+        const groupedCategories = computed(() => {
+          const groups = {};
+          Object.values(stocks.value).forEach(s => {
+            const cat = s.category || '其他族群';
+            if (!groups[cat]) groups[cat] = [];
+            groups[cat].push(s);
+          });
+          Object.keys(groups).forEach(k => {
+            groups[k].sort((a,b) => b.total_net - a.total_net);
+          });
+          return groups;
+        });
+
+        const toggleCat = (catName) => {
+          expandedCat.value = expandedCat.value === catName ? null : catName;
+        };
+
+        const calcCatTotal = (stocksArr) => {
+          return roundVal(stocksArr.reduce((acc, cur) => acc + (cur.total_net || 0), 0));
+        };
+
+        const getCatIcon = (cat) => {
+          const icons = { "銀行金融": "🏦", "被動元件": "🔌", "貨櫃航運": "🚢", "晶圓代工": "💻", "PCB 載板": "📟", "AI 伺服器": "🤖" };
+          return icons[cat] || "📊";
+        };
+
+        const calcNetAccumulated = (st, days) => {
+          if (!st || !st.daily_history) return 0;
+          const slice = st.daily_history.slice(0, parseInt(days));
+          const sum = slice.reduce((a, b) => a + b, 0);
+          return roundVal(sum);
+        };
+
+        const calcAvgCost = (st, days, factor) => {
+          if (!st) return 0;
+          const base = st.price || 50;
+          return roundVal(base * factor + (days * 0.1));
+        };
+
+        const roundVal = (v) => Math.round(v * 100) / 100;
 
         const list1 = computed(() => {
           return Object.values(stocks.value).filter(s => s.foreign > 0 && s.trust > 0).sort((a,b) => b.total_net - a.total_net).slice(0, 5);
@@ -561,6 +602,7 @@
 
         return {
           isLaunching, currentTab, updateTime, stocks, searchQuery, selectedStock, list1, rankList, favStocksList,
+          customDays, expandedCat, groupedCategories, toggleCat, calcCatTotal, getCatIcon, calcNetAccumulated, calcAvgCost,
           isRegisterMode, loginEmail, loginPassword, currentUser, isAdmin, isVip, favorites, isFavorite, toggleFavorite,
           newAdminPassword, showRedeemModal, showAdminModal, inputCode, generatedSerial,
           loadData, handleLoginOrRegister, logout, updateAdminPassword, redeemCode, quickTrial, shareApp, generateSerial
