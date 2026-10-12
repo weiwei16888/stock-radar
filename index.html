@@ -32,8 +32,9 @@
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col">
 
-      <!-- ================= 分頁 1：今日雷達 ================= -->
+      <!-- ================= 分頁 1：籌碼雷達 (極致豐富頁面) ================= -->
       <main v-if="currentTab === 'today'" class="p-3 space-y-4 flex-1">
+        <!-- 頂部資訊列 -->
         <div class="flex items-center justify-between bg-[#131822] p-3.5 rounded-2xl border border-slate-800/80 shadow-lg">
           <div class="flex items-center space-x-3">
             <div class="w-10 h-10 bg-gradient-to-tr from-amber-500 to-amber-300 rounded-xl flex items-center justify-center text-xl font-bold shadow-md shadow-amber-500/20">🎯</div>
@@ -44,17 +45,17 @@
               <p class="text-[11px] text-slate-400">資料日期：<span class="text-slate-200 font-mono">{{ updateTime }}</span></p>
             </div>
           </div>
-          <button @click="loadData" class="px-2.5 py-1 bg-slate-800 text-slate-300 text-xs rounded-lg border border-slate-700">🔄 重新整理</button>
+          <button @click="loadData" class="px-2.5 py-1 bg-slate-800 text-slate-300 text-xs rounded-lg border border-slate-700 hover:bg-slate-700">🔄 重新整理</button>
         </div>
 
-        <!-- 搜尋框 -->
+        <!-- 搜尋列 -->
         <div class="relative">
-          <input v-model="searchQuery" type="text" placeholder="🔍 查股票代號、名稱或板塊 (如 6155 鈞寶)" 
+          <input v-model="searchQuery" type="text" placeholder="🔍 搜尋股票代號或名稱 (例如: 6155 或 鈞寶)" 
                  class="w-full bg-[#131822] border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400/60 placeholder-slate-500 font-mono">
           <button v-if="searchQuery" @click="searchQuery = ''" class="absolute right-3 top-3 text-xs text-slate-500">✕</button>
         </div>
 
-        <!-- 搜尋個股詳細頁 -->
+        <!-- 情境 A：搜尋個股詳細頁面 (媲美 Tide 完整籌碼解析) -->
         <div v-if="searchQuery.trim()" class="space-y-3">
           <div v-if="selectedStock" class="bg-[#131822] border border-amber-500/40 rounded-2xl p-4 space-y-4 shadow-xl">
             <div class="flex justify-between items-start">
@@ -63,52 +64,58 @@
                   <span class="text-[10px] font-bold px-2 py-0.5 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30">{{ selectedStock.market }}</span>
                   <span class="text-xs text-slate-400 font-mono">{{ selectedStock.code }}</span>
                 </div>
-                <h2 class="text-2xl font-black text-white mt-1">{{ selectedStock.name }}</h2>
+                <h2 class="text-2xl font-black text-white mt-1">{{ selectedStock.name }} <span class="text-xs font-normal px-2 py-0.5 bg-slate-800 text-slate-300 rounded">被動元件</span></h2>
               </div>
               <button @click="toggleFavorite(selectedStock.code)" class="text-xs px-3 py-1.5 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/30">
-                {{ isFavorite(selectedStock.code) ? '★ 已在自選' : '☆ 加自選' }}
+                {{ isFavorite(selectedStock.code) ? '📌 已在追蹤' : '➕ 追蹤個股' }}
               </button>
             </div>
 
-            <!-- 當日行情與漲跌 -->
+            <!-- 當日行情與漲跌幅卡片 -->
             <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
-              <span class="text-slate-400">當日收盤價與漲跌</span>
+              <span class="text-slate-400">當日漲跌</span>
               <span class="font-bold text-sm font-mono text-white">{{ selectedStock.price }} <span :class="selectedStock.change >= 0 ? 'text-rose-400' : 'text-emerald-400'">({{ selectedStock.change_pct }})</span></span>
             </div>
 
-            <!-- 三大法人當日買賣超 -->
-            <div class="grid grid-cols-2 gap-2.5">
-              <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
-                <div class="text-[11px] text-slate-400">外資當日買賣超</div>
-                <div :class="selectedStock.foreign >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-base mt-0.5 font-mono">
+            <!-- 當日法人買賣超分項 -->
+            <div class="grid grid-cols-3 gap-2">
+              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800/80 text-center">
+                <div class="text-[10px] text-slate-400">外資當日</div>
+                <div :class="selectedStock.foreign >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-xs mt-1 font-mono">
                   {{ selectedStock.foreign >= 0 ? '+' : '' }}{{ selectedStock.foreign }} 億
                 </div>
               </div>
-              <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
-                <div class="text-[11px] text-slate-400">投信當日買賣超</div>
-                <div :class="selectedStock.trust >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-base mt-0.5 font-mono">
+              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800/80 text-center">
+                <div class="text-[10px] text-slate-400">投信當日</div>
+                <div :class="selectedStock.trust >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-xs mt-1 font-mono">
                   {{ selectedStock.trust >= 0 ? '+' : '' }}{{ selectedStock.trust }} 億
+                </div>
+              </div>
+              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800/80 text-center">
+                <div class="text-[10px] text-slate-400">自營商當日</div>
+                <div :class="selectedStock.dealer >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-xs mt-1 font-mono">
+                  {{ selectedStock.dealer >= 0 ? '+' : '' }}{{ selectedStock.dealer }} 億
                 </div>
               </div>
             </div>
 
-            <!-- 近 5 日 / 近 20 日累積籌碼 -->
+            <!-- 近 5 日 / 20 日累積 -->
             <div class="grid grid-cols-2 gap-2.5">
               <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
-                <div class="text-[11px] text-slate-400">近 5 日法人累積</div>
+                <div class="text-[11px] text-slate-400">近 5 日買賣超</div>
                 <div :class="selectedStock.net_5d >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-sm mt-0.5 font-mono">
                   {{ selectedStock.net_5d >= 0 ? '+' : '' }}{{ selectedStock.net_5d }} 億
                 </div>
               </div>
               <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
-                <div class="text-[11px] text-slate-400">近 20 日法人累積</div>
+                <div class="text-[11px] text-slate-400">近 20 日累計</div>
                 <div :class="selectedStock.net_20d >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-sm mt-0.5 font-mono">
                   {{ selectedStock.net_20d >= 0 ? '+' : '' }}{{ selectedStock.net_20d }} 億
                 </div>
               </div>
             </div>
 
-            <!-- 進階指標 VIP 權限卡片 (非 VIP 用 🔒 VIP解鎖 擋住) -->
+            <!-- VIP 進階指標卡片 -->
             <div class="bg-[#0b0e14] p-3.5 rounded-xl border border-slate-800 space-y-3">
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-400">法人 20 日均價</span>
@@ -126,26 +133,79 @@
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
               <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
-                <span class="text-slate-400">資金停留 / 淨流向</span>
+                <span class="text-slate-400">資金停留 / 動向</span>
                 <span v-if="isVip" class="text-rose-400 font-bold">{{ selectedStock.flow_status }}</span>
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
             </div>
           </div>
           <div v-else class="text-center py-8 text-slate-500 text-xs bg-[#131822] rounded-2xl border border-slate-800">
-            找不到「{{ searchQuery }}」的數據
+            未搜尋到「{{ searchQuery }}」的個股數據
           </div>
         </div>
 
-        <!-- 預設策略主題清單 -->
+        <!-- 情境 B：未搜尋時的主頁儀表板 (極致豐富內容) -->
         <div v-else class="space-y-4">
+          <!-- 1. 今日大盤與籌碼總結 -->
+          <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3 shadow-lg">
+            <div class="flex justify-between items-center">
+              <h3 class="text-xs font-bold text-amber-400 tracking-wider">今日焦點盤態</h3>
+              <span class="text-[10px] text-slate-400 font-mono">大盤情緒：51 中性</span>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800/80">
+                <span class="text-slate-400 text-[11px]">法人買最多產業</span>
+                <div class="text-rose-400 font-bold text-sm mt-0.5">銀行金融 <span class="text-xs">+87億</span></div>
+              </div>
+              <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800/80">
+                <span class="text-slate-400 text-[11px]">主力大戶買超</span>
+                <div class="text-rose-400 font-bold text-sm mt-0.5">鴻海 <span class="text-xs">+34億</span></div>
+              </div>
+            </div>
+
+            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800/80 text-xs space-y-1">
+              <div class="text-amber-300 font-bold flex items-center gap-1">🤖 AI 盤後籌碼動向速報</div>
+              <p class="text-slate-300 leading-relaxed text-[11px]">
+                台股今日微幅收低 0.02%。三大法人與主力大戶買超集中於銀行金融與電子權值股。AI 伺服器與被動元件族群資金呈現穩健流入。
+              </p>
+            </div>
+          </div>
+
+          <!-- 2. 板塊資金熱區預覽 (原創風格) -->
+          <div class="bg-[#131822] border border-slate-800 rounded-2xl p-4 space-y-3">
+            <div class="flex justify-between items-center">
+              <h3 class="text-sm font-bold text-white flex items-center gap-1.5">🌐 熱門板塊資金淨流入排行</h3>
+              <button @click="currentTab = 'bubbles'" class="text-xs text-amber-400">看全部 ›</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
+                <span class="text-slate-300 font-medium">銀行金融</span>
+                <span class="text-rose-400 font-mono font-bold">+87.4億</span>
+              </div>
+              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
+                <span class="text-slate-300 font-medium">貨櫃航運</span>
+                <span class="text-rose-400 font-mono font-bold">+46.5億</span>
+              </div>
+              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
+                <span class="text-slate-300 font-medium">被動元件</span>
+                <span class="text-rose-400 font-mono font-bold">+20.9億</span>
+              </div>
+              <div class="bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 flex justify-between items-center">
+                <span class="text-slate-300 font-medium">晶圓代工</span>
+                <span class="text-rose-400 font-mono font-bold">+17.5億</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 原創籌碼策略排行列表 -->
           <div class="bg-[#131822] border border-slate-800 rounded-2xl p-4 space-y-3">
             <div class="flex justify-between items-center border-b border-slate-800 pb-2.5">
-              <h3 class="text-sm font-bold text-rose-400 flex items-center gap-1.5">🔥 土洋同步鎖碼 (外資+ 投信+)</h3>
+              <h3 class="text-sm font-bold text-rose-400 flex items-center gap-1.5">⚡ 雙主力法人籌碼共振 (外資+ 投信+)</h3>
               <span class="text-xs text-slate-400 font-mono">共 {{ list1.length }} 檔</span>
             </div>
             <div class="space-y-2">
-              <div v-for="s in list1" :key="s.code" @click="searchQuery = s.code" class="flex justify-between items-center bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 cursor-pointer">
+              <div v-for="s in list1" :key="s.code" @click="searchQuery = s.code" class="flex justify-between items-center bg-[#0b0e14] p-2.5 rounded-xl border border-slate-800 cursor-pointer hover:border-amber-500/50">
                 <div>
                   <span class="text-xs text-slate-400 font-mono mr-1.5">{{ s.code }}</span>
                   <span class="text-sm font-bold text-slate-200">{{ s.name }}</span>
@@ -157,17 +217,17 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 2：泡泡圖 ================= -->
+      <!-- ================= 分頁 2：資金熱圖 ================= -->
       <main v-if="currentTab === 'bubbles'" class="p-4 space-y-4 flex-1 flex flex-col justify-center items-center text-center">
-        <div class="text-5xl mb-2">🫧</div>
-        <h2 class="text-lg font-bold text-white">籌碼資金泡泡圖</h2>
-        <p class="text-xs text-slate-400 max-w-xs">視覺化追蹤各大產業板塊資金流向。</p>
+        <div class="text-5xl mb-2">🌐</div>
+        <h2 class="text-lg font-bold text-white">全產業資金流向熱區</h2>
+        <p class="text-xs text-slate-400 max-w-xs">視覺化追蹤台股各大產業供應鏈資金進出強度。</p>
         <button v-if="!isVip" @click="showRedeemModal = true" class="mt-2 px-4 py-2 bg-amber-500 text-black font-bold rounded-xl text-xs">🎁 輸入序號免費試用</button>
       </main>
 
-      <!-- ================= 分頁 3：排行 ================= -->
+      <!-- ================= 分頁 3：籌碼榜單 ================= -->
       <main v-if="currentTab === 'rank'" class="p-3 space-y-3 flex-1">
-        <h2 class="text-base font-bold text-white">三大法人買賣超排行</h2>
+        <h2 class="text-base font-bold text-white">三大法人買賣超總榜單</h2>
         <div class="space-y-2">
           <div v-for="(s, idx) in rankList" :key="s.code" class="flex justify-between items-center bg-[#131822] p-3 rounded-xl border border-slate-800">
             <div class="flex items-center gap-3">
@@ -184,9 +244,9 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 4：自選 ================= -->
+      <!-- ================= 分頁 4：追蹤 ================= -->
       <main v-if="currentTab === 'fav'" class="p-3 space-y-3 flex-1">
-        <h2 class="text-base font-bold text-white">我的自選清單</h2>
+        <h2 class="text-base font-bold text-white">個人專屬個股追蹤表</h2>
         <div v-if="favStocksList.length" class="space-y-2">
           <div v-for="s in favStocksList" :key="s.code" @click="searchQuery = s.code; currentTab = 'today'" class="flex justify-between items-center bg-[#131822] p-3 rounded-xl border border-slate-800 cursor-pointer">
             <div>
@@ -200,10 +260,9 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 5：我的 (會員登入、管理員專屬管理、修改密碼) ================= -->
+      <!-- ================= 分頁 5：控制中心 ================= -->
       <main v-if="currentTab === 'profile'" class="p-3 space-y-4 flex-1">
         <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3">
-          <!-- 已登入狀態 -->
           <div v-if="currentUser" class="flex justify-between items-center">
             <div class="flex items-center space-x-3">
               <div class="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center text-xl font-bold text-amber-400 border border-amber-500/30">
@@ -219,43 +278,38 @@
                 <p class="text-xs text-slate-400 mt-0.5">{{ currentUser.email }}</p>
               </div>
             </div>
-            <button @click="logout" class="text-xs text-slate-400 hover:text-slate-200">登出</button>
+            <button @click="logout" class="text-xs text-slate-400 hover:text-slate-200">登出帳號</button>
           </div>
 
-          <!-- 未登入狀態：真正輸入帳號與密碼 -->
           <div v-else class="space-y-3">
             <div class="flex justify-between items-center">
-              <h3 class="text-sm font-bold text-white">{{ isRegisterMode ? '建立新帳號' : '帳號登入' }}</h3>
+              <h3 class="text-sm font-bold text-white">{{ isRegisterMode ? '建立專屬帳號' : '會員帳號登入' }}</h3>
               <button @click="isRegisterMode = !isRegisterMode" class="text-xs text-amber-400">
                 {{ isRegisterMode ? '已有帳號？點此登入' : '沒有帳號？免費註冊' }}
               </button>
             </div>
 
             <div class="space-y-2">
-              <input v-model="loginEmail" type="email" placeholder="電子信箱 (管理員: admin@stockradar.app)" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2.5 text-xs focus:outline-none focus:border-amber-400 font-mono">
-              <input v-model="loginPassword" type="password" placeholder="密碼 (管理員預設: admin888)" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2.5 text-xs focus:outline-none focus:border-amber-400 font-mono">
+              <input v-model="loginEmail" type="email" placeholder="請輸入電子信箱" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2.5 text-xs focus:outline-none focus:border-amber-400 font-mono">
+              <input v-model="loginPassword" type="password" placeholder="請輸入密碼" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2.5 text-xs focus:outline-none focus:border-amber-400 font-mono">
             </div>
 
             <button @click="handleLoginOrRegister" class="w-full bg-amber-500 text-black font-extrabold py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20">
-              {{ isRegisterMode ? '獨立註冊 App 帳號' : '登入 App 帳號' }}
+              {{ isRegisterMode ? '建立新帳號' : '登入帳號' }}
             </button>
           </div>
 
-          <!-- 序號試用按鈕 -->
           <button v-if="!isVip" @click="showRedeemModal = true" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1 shadow-lg shadow-amber-500/20">
             🎁 輸入序號免費開通 30 天 VIP 試用
           </button>
         </div>
 
-        <!-- 選單列表 -->
         <div class="bg-[#131822] border border-slate-800 rounded-2xl divide-y divide-slate-800/80 text-xs">
-          <!-- 只有最高管理員看得見並進入控制台 -->
           <div v-if="isAdmin" @click="showAdminModal = true" class="p-3.5 flex justify-between items-center bg-amber-500/10 cursor-pointer">
             <span class="text-amber-300 font-bold">⚙️ 管理員獨家控制台 (產序號 / 修改密碼)</span>
             <span class="text-amber-400">›</span>
           </div>
 
-          <!-- 邀請好友贈送 7 天免費 VIP -->
           <div @click="shareApp" class="p-3.5 flex justify-between items-center cursor-pointer hover:bg-slate-800/30">
             <div class="flex items-center gap-2">
               <span class="text-base">🎁</span>
@@ -274,30 +328,30 @@
       <!-- 底部 5 大分頁導覽列 -->
       <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#131822]/95 backdrop-blur-md border-t border-slate-800/80 flex justify-around py-2 z-40 text-[10px]">
         <button @click="currentTab = 'today'" :class="currentTab === 'today' ? 'text-amber-400 font-bold' : 'text-slate-400'" class="flex flex-col items-center gap-0.5">
-          <span class="text-base">📢</span> 今日
+          <span class="text-base">📡</span> 籌碼雷達
         </button>
         <button @click="currentTab = 'bubbles'" :class="currentTab === 'bubbles' ? 'text-amber-400 font-bold' : 'text-slate-400'" class="flex flex-col items-center gap-0.5">
-          <span class="text-base">🫧</span> 泡泡圖
+          <span class="text-base">🌐</span> 資金熱圖
         </button>
         <button @click="currentTab = 'rank'" :class="currentTab === 'rank' ? 'text-amber-400 font-bold' : 'text-slate-400'" class="flex flex-col items-center gap-0.5">
-          <span class="text-base">🏅</span> 排行
+          <span class="text-base">📈</span> 籌碼榜單
         </button>
         <button @click="currentTab = 'fav'" :class="currentTab === 'fav' ? 'text-amber-400 font-bold' : 'text-slate-400'" class="flex flex-col items-center gap-0.5">
-          <span class="text-base">⭐</span> 自選
+          <span class="text-base">📌</span> 個股追蹤
         </button>
         <button @click="currentTab = 'profile'" :class="currentTab === 'profile' ? 'text-amber-400 font-bold' : 'text-slate-400'" class="flex flex-col items-center gap-0.5">
-          <span class="text-base">👤</span> 我的
+          <span class="text-base">⚙️</span> 控制中心
         </button>
       </nav>
 
     </div>
 
-    <!-- ================= 彈窗：序號免費試用開通 ================= -->
+    <!-- 彈窗：序號免費試用開通 -->
     <div v-if="showRedeemModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
       <div class="bg-[#131822] border border-amber-500/30 rounded-2xl p-5 max-w-xs w-full space-y-4">
         <h3 class="text-base font-bold text-amber-400">🎁 開通 VIP 免費試用</h3>
         <p class="text-xs text-slate-400">請輸入 VIP 體驗序號，或點擊「一鍵免費開通 7 天試用」：</p>
-        <input v-model="inputCode" type="text" placeholder="輸入序號 (如 RADAR888 或開通碼)" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2.5 text-xs focus:outline-none focus:border-amber-400 font-mono">
+        <input v-model="inputCode" type="text" placeholder="請輸入 VIP 體驗序號" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2.5 text-xs focus:outline-none focus:border-amber-400 font-mono">
         <div class="space-y-2">
           <button @click="redeemCode" class="w-full bg-amber-500 text-black font-bold py-2 rounded-xl text-xs">確認序號兌換</button>
           <button @click="quickTrial" class="w-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold py-2 rounded-xl text-xs">✨ 一鍵免費開通 7 天試用</button>
@@ -306,7 +360,7 @@
       </div>
     </div>
 
-    <!-- ================= 彈窗：最高管理員獨家控制台 ================= -->
+    <!-- 彈窗：最高管理員獨家控制台 -->
     <div v-if="showAdminModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
       <div class="bg-[#131822] border border-slate-700 rounded-2xl p-5 max-w-xs w-full space-y-4">
         <h3 class="text-base font-bold text-amber-400">⚙️ 管理員獨家控制台</h3>
@@ -320,10 +374,9 @@
             {{ generatedSerial }}
           </div>
 
-          <!-- 修改管理員密碼 -->
           <div class="pt-2 border-t border-slate-800 space-y-2">
             <div class="text-xs text-slate-300 font-bold">修改管理員密碼：</div>
-            <input v-model="newAdminPassword" type="password" placeholder="輸入新密碼" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2 text-xs focus:outline-none focus:border-amber-400 font-mono">
+            <input v-model="newAdminPassword" type="password" placeholder="請輸入新密碼" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2 text-xs focus:outline-none focus:border-amber-400 font-mono">
             <button @click="updateAdminPassword" class="w-full bg-amber-500/20 text-amber-300 border border-amber-500/30 py-1.5 rounded-xl text-xs font-bold">更新密碼</button>
           </div>
 
@@ -345,7 +398,6 @@
         const searchQuery = ref('');
         const favorites = ref(['6155', '2330']);
 
-        // 登入與註冊狀態
         const isRegisterMode = ref(false);
         const loginEmail = ref('');
         const loginPassword = ref('');
@@ -354,11 +406,9 @@
         const isAdmin = ref(false);
         const isVip = ref(false);
 
-        // 管理員密碼設定
         const adminPassword = ref('admin888');
         const newAdminPassword = ref('');
 
-        // 彈窗
         const showRedeemModal = ref(false);
         const showAdminModal = ref(false);
 
@@ -403,10 +453,9 @@
           }
         };
 
-        // 處理帳號登入與註冊
         const handleLoginOrRegister = () => {
           if (!loginEmail.value.trim() || !loginPassword.value.trim()) {
-            alert('請完整輸入帳號與密碼！');
+            alert('請輸入完整的帳號與密碼！');
             return;
           }
 
@@ -414,12 +463,12 @@
             currentUser.value = { name: '魏霆瑋 (最高管理員)', email: 'admin@stockradar.app' };
             isAdmin.value = true;
             isVip.value = true;
-            alert('最高管理員身份登入成功！已開啟獨家控制台與無限 VIP 權益。');
+            alert('最高管理員身分登入成功！已開啟控制台與無限 VIP 權限。');
           } else {
             currentUser.value = { name: loginEmail.value.split('@')[0], email: loginEmail.value };
             isAdmin.value = false;
             isVip.value = false;
-            alert(isRegisterMode.value ? '註冊成功並已登入！' : '登入成功！目前身份：免費用戶。');
+            alert(isRegisterMode.value ? '註冊成功並已登入！' : '登入成功！目前身分：免費用戶。');
           }
           loginPassword.value = '';
         };
