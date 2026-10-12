@@ -32,9 +32,8 @@
 
     <div class="max-w-md mx-auto min-h-screen flex flex-col">
 
-      <!-- ================= 分頁 1：籌碼雷達 (極致豐富頁面) ================= -->
+      <!-- ================= 分頁 1：籌碼雷達 ================= -->
       <main v-if="currentTab === 'today'" class="p-3 space-y-4 flex-1">
-        <!-- 頂部資訊列 -->
         <div class="flex items-center justify-between bg-[#131822] p-3.5 rounded-2xl border border-slate-800/80 shadow-lg">
           <div class="flex items-center space-x-3">
             <div class="w-10 h-10 bg-gradient-to-tr from-amber-500 to-amber-300 rounded-xl flex items-center justify-center text-xl font-bold shadow-md shadow-amber-500/20">🎯</div>
@@ -55,7 +54,7 @@
           <button v-if="searchQuery" @click="searchQuery = ''" class="absolute right-3 top-3 text-xs text-slate-500">✕</button>
         </div>
 
-        <!-- 情境 A：搜尋個股詳細頁面 (媲美 Tide 完整籌碼解析) -->
+        <!-- 搜尋個股詳細頁面 -->
         <div v-if="searchQuery.trim()" class="space-y-3">
           <div v-if="selectedStock" class="bg-[#131822] border border-amber-500/40 rounded-2xl p-4 space-y-4 shadow-xl">
             <div class="flex justify-between items-start">
@@ -144,7 +143,7 @@
           </div>
         </div>
 
-        <!-- 情境 B：未搜尋時的主頁儀表板 (極致豐富內容) -->
+        <!-- 主頁儀表板 -->
         <div v-else class="space-y-4">
           <!-- 1. 今日大盤與籌碼總結 -->
           <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3 shadow-lg">
@@ -172,7 +171,7 @@
             </div>
           </div>
 
-          <!-- 2. 板塊資金熱區預覽 (原創風格) -->
+          <!-- 2. 板塊資金熱區預覽 -->
           <div class="bg-[#131822] border border-slate-800 rounded-2xl p-4 space-y-3">
             <div class="flex justify-between items-center">
               <h3 class="text-sm font-bold text-white flex items-center gap-1.5">🌐 熱門板塊資金淨流入排行</h3>
@@ -217,12 +216,57 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 2：資金熱圖 ================= -->
-      <main v-if="currentTab === 'bubbles'" class="p-4 space-y-4 flex-1 flex flex-col justify-center items-center text-center">
-        <div class="text-5xl mb-2">🌐</div>
-        <h2 class="text-lg font-bold text-white">全產業資金流向熱區</h2>
-        <p class="text-xs text-slate-400 max-w-xs">視覺化追蹤台股各大產業供應鏈資金進出強度。</p>
-        <button v-if="!isVip" @click="showRedeemModal = true" class="mt-2 px-4 py-2 bg-amber-500 text-black font-bold rounded-xl text-xs">🎁 輸入序號免費試用</button>
+      <!-- ================= 分頁 2：資金熱圖 (全面免費開放瀏覽) ================= -->
+      <main v-if="currentTab === 'bubbles'" class="p-3 space-y-4 flex-1">
+        <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3">
+          <div class="flex justify-between items-center">
+            <h2 class="text-base font-bold text-white flex items-center gap-1.5">🌐 全產業資金流向熱熱區</h2>
+            <span class="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 font-bold rounded">免費觀看</span>
+          </div>
+          <p class="text-xs text-slate-400">即時追蹤台股各大核心產業供應鏈資金進出與流向強度：</p>
+          
+          <div class="space-y-2.5 pt-1">
+            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <div class="text-sm font-bold text-white">🏦 銀行金融族群</div>
+                <div class="text-[10px] text-slate-400">主力資金持續流入 · 創 20 日新高</div>
+              </div>
+              <span class="text-rose-400 font-mono font-bold text-sm">+87.4 億</span>
+            </div>
+
+            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <div class="text-sm font-bold text-white">🚢 貨櫃航運族群</div>
+                <div class="text-[10px] text-slate-400">外資大幅加碼布局</div>
+              </div>
+              <span class="text-rose-400 font-mono font-bold text-sm">+46.5 億</span>
+            </div>
+
+            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <div class="text-sm font-bold text-white">🔌 被動元件族群 (如 6155 鈞寶)</div>
+                <div class="text-[10px] text-slate-400">法人投信連續防禦卡位</div>
+              </div>
+              <span class="text-rose-400 font-mono font-bold text-sm">+20.9 億</span>
+            </div>
+
+            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <div class="text-sm font-bold text-white">💻 晶圓代工與封測族群</div>
+                <div class="text-[10px] text-slate-400">AI 晶片供應鏈穩健調節</div>
+              </div>
+              <span class="text-rose-400 font-mono font-bold text-sm">+17.5 億</span>
+            </div>
+
+            <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 flex justify-between items-center">
+              <div>
+                <div class="text-sm font-bold text-white">📡 5G 連接器與通訊網通</div>
+                <div class="text-[10px] text-slate-400">內資買盤小幅淨流入</div>
+              </div>
+              <span class="text-rose-400 font-mono font-bold text-sm">+9.8 億</span>
+            </div>
+          </div>
+        </div>
       </main>
 
       <!-- ================= 分頁 3：籌碼榜單 ================= -->
