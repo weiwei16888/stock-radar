@@ -1,89 +1,66 @@
 import requests
 import json
-from datetime import datetime
+import re
 
-def clean_int(val):
-    if isinstance(val, (int, float)): return int(val)
-    if not val or not isinstance(val, str): return 0
-    clean_str = val.replace(",", "").replace(" ", "").strip()
-    try: return int(clean_str)
-    except ValueError: return 0
+def fetch_all_data():
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    
+    # 1. 抓取 TWSE 上市每日收盤與三大法人數據
+    twse_url = "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?response=json"
+    twse_bs_url = "https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALL"
+    
+    stock_dict = {}
 
-def get_twse_stocks(today_twse_str):
-    url = f"https://www.twse.com.tw/rwd/zh/fund/T86?response=json&date={today_twse_str}&selectType=ALL"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    stocks = []
     try:
-        res = requests.get(url, headers=headers, timeout=10)
-        data = res.json()
-        if data.get("stat") == "OK":
-            for row in data.get("data", []):
-                code, name = row[0].strip(), row[1].strip()
-                if len(code) == 4 and code.isdigit():
-                    stocks.append({
-                        "code": code,
-                        "name": name,
-                        "market": "上市",
-                        "foreign": round(clean_int(row[4]) / 1000),
-                        "trust": round(clean_int(row[10]) / 1000)
-                    })
-    except Exception as e: print(f"TWSE Error: {e}")
-    return stocks
+        r = requests.get(twse_bs_url, headers=headers).json()
+        if r.get('stat') == 'OK':
+            date_str = r.get('date', '')
+            for row in r.get('data', []):
+                code = row[0].strip()
+                name = row[1].strip()
+                foreign = float(row[4].replace(',', '')) if row[4] != '--' else 0
+                trust = float(row[10].replace(',', '')) if row[10] != '--' else 0
+                
+                stock_dict[code] = {
+                    "code": code,
+                    "name": name,
+                    "market": "上市",
+                    "foreign": round(foreign / 100000000, 2),  # 單位：億
+                    "trust": round(trust / 100000000, 2),      # 單位：億
+                    "total_net": round((foreign + trust) / 100000000, 2)
+                }
+    except Exception as e:
+        print("TWSE Fetch Error:", e)
 
-def get_tpex_stocks(today_tpex_str):
-    url = f"https://www.tpex.org.tw/web/stock/333/333_result.php?l=zh-tw&o=json&se=AL&d={today_tpex_str}"
-    headers = {"User-Agent": "Mozilla/5.0"}
-    stocks = []
+    # 2. 抓取 TPEx 上櫃三大法人數據
+    tpex_bs_url = "https://www.tpex.org.tw/web/stock/33_middle/33_foreign/forstr_result.php?l=zh-tw&t=D"
     try:
-        res = requests.get(url, headers=headers, timeout=10)
-        data = res.json()
-        for row in data.get("aaData", []):
-            code, name = str(row[0]).strip(), str(row[1]).strip()
-            if len(code) == 4 and code.isdigit():
-                stocks.append({
+        r = requests.get(tpex_bs_url, headers=headers).json()
+        if 'aaData' in r:
+            for row in r.get('aaData', []):
+                code = row[0].strip()
+                name = row[1].strip()
+                foreign = float(row[8].replace(',', '')) if row[8] != '--' else 0
+                trust = float(row[14].replace(',', '')) if row[14] != '--' else 0
+                
+                stock_dict[code] = {
                     "code": code,
                     "name": name,
                     "market": "上櫃",
-                    "foreign": round(clean_int(row[8]) / 1000),
-                    "trust": round(clean_int(row[11]) / 1000)
-                })
-    except Exception as e: print(f"TPEx Error: {e}")
-    return stocks
+                    "foreign": round(foreign / 100000000, 2),
+                    "trust": round(trust / 100000000, 2),
+                    "total_net": round((foreign + trust) / 100000000, 2)
+                }
+    except Exception as e:
+        print("TPEx Fetch Error:", e)
 
-def process_chip_data():
-    now = datetime.now()
-    today_twse = now.strftime("%Y%m%d")
-    today_tpex = f"{now.year - 1911}/{now.strftime('%m/%d')}"
-    
-    all_raw = get_twse_stocks(today_twse) + get_tpex_stocks(today_tpex)
-    processed = []
-    
-    for item in all_raw:
-        f, t = item["foreign"], item["trust"]
-        if f > 0 and t > 0: q = "bothBuy"
-        elif f <= 0 and t > 0: q = "trustBuyOnly"
-        elif f > 0 and t <= 0: q = "foreignBuyOnly"
-        else: q = "bothSell"
+    output = {
+        "update_time": date_str if 'date_str' in locals() else "最新交易日",
+        "stocks": stock_dict
+    }
 
-        score = min(99, max(10, int(50 + ((f + t) / 50))))
-        status = "🔥 主力極度鎖碼 (突破成本區)" if score >= 80 else ("⚡ 法人沿成本線加碼" if score >= 60 else "❄️ 籌碼鬆動 (回測主力成本)")
-
-        processed.append({
-            "code": item["code"],
-            "name": item["name"],
-            "market": item["market"],
-            "foreign": f,
-            "trust": t,
-            "quadrant": q,
-            "vip_data": {
-                "score": score,
-                "status": status
-            }
-        })
-
-    output = {"update_time": now.strftime("%Y-%m-%d %H:%M:%S"), "total_count": len(processed), "stocks": processed}
-    with open("data.json", "w", encoding="utf-8") as f:
+    with open('data.json', 'w', encoding='utf-8') as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
 
-if __name__ == "__main__":
-    process_chip_data()
+if __name__ == '__main__':
+    fetch_all_data()
