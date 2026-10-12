@@ -5,17 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>瑋盤看資訊</title>
 
-  <!-- PWA 手機桌面設定 (桌面圖示：股票大盤趨勢圖標 📊，名稱：瑋盤看資訊) -->
+  <!-- PWA 手機桌面設定 (內外 Logo 完全統一為：📈 股市趨勢圖標) -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-title" content="瑋盤看資訊">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="apple-touch-icon" href="https://api.iconify.design/ri:stock-fill.svg?color=%23f59e0b">
+  <link rel="apple-touch-icon" href="https://api.iconify.design/ri:line-chart-fill.svg?color=%23f59e0b">
 
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* 酷炫年輕化股票雷達動畫 */
     @keyframes cyberPulse {
       0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
       70% { transform: scale(1.08); box-shadow: 0 0 0 25px rgba(245, 158, 11, 0); }
@@ -30,7 +29,7 @@
 <body class="bg-[#0b0e14] text-slate-100 min-h-screen font-sans select-none pb-20">
   <div id="app">
 
-    <!-- 1. 酷炫開場啟動動畫 (股市圖片視覺，完全無「瑋」字) -->
+    <!-- 1. 開場啟動動畫 (內外 Logo 完全統一為 📈) -->
     <div v-if="isLaunching" class="fixed inset-0 bg-[#06080d] z-50 flex flex-col items-center justify-center p-4 overflow-hidden">
       <div class="absolute w-72 h-72 bg-gradient-to-tr from-amber-500/20 via-purple-600/20 to-blue-600/20 rounded-full blur-3xl animate-pulse"></div>
       
@@ -39,7 +38,7 @@
           <div class="w-full h-full border border-amber-400/30 rounded-full"></div>
           <div class="absolute top-1/2 left-1/2 w-12 h-12 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-tr from-amber-400/60 to-transparent rounded-full animate-radar-scan origin-bottom-right"></div>
         </div>
-        <span class="text-4xl filter drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">📊</span>
+        <span class="text-4xl filter drop-shadow-[0_0_12px_rgba(245,158,11,0.8)]">📈</span>
       </div>
 
       <h1 class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-yellow-400 to-amber-500 tracking-widest uppercase">瑋盤看資訊</h1>
@@ -77,7 +76,6 @@
         <!-- 個股詳細頁面 -->
         <div v-if="searchQuery.trim()" class="space-y-3">
           <div v-if="selectedStock" class="bg-[#131822] border border-amber-500/40 rounded-2xl p-4 space-y-4 shadow-xl">
-            <!-- 頂部：股票名稱、代號與外資持股 -->
             <div class="flex justify-between items-start">
               <div>
                 <div class="flex items-center gap-2">
@@ -95,7 +93,7 @@
               </button>
             </div>
 
-            <!-- 專業日 K 線圖表 (最高/最低/均線對齊圖二) -->
+            <!-- 專業日 K 線圖表 -->
             <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 space-y-2">
               <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
                 <span class="text-slate-300 font-bold">日K線與走勢圖 (含 MA5/10/20 均線)</span>
@@ -163,7 +161,7 @@
               </div>
             </div>
 
-            <!-- 外資累積金額與投信累積金額獨立拆解 (第三需求) -->
+            <!-- 外資累積金額與投信累積金額獨立拆解 -->
             <div class="grid grid-cols-2 gap-2.5">
               <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800">
                 <div class="text-[11px] text-slate-400">外資近 5 日累積</div>
@@ -251,7 +249,7 @@
                 <div class="text-rose-400 font-bold text-sm mt-0.5">銀行金融 <span class="text-xs">+87億</span></div>
               </div>
               <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800/80">
-                <span class="text-slate-400 text-[11px]">上市上櫃總家數</span>
+                <span class="text-slate-400 text-[11px]">上市上櫃興櫃總家數</span>
                 <div class="text-amber-400 font-bold text-sm mt-0.5">{{ totalStockCount }} 檔股票</div>
               </div>
             </div>
@@ -275,14 +273,14 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 2：資金熱圖 (完整還原展開) ================= -->
+      <!-- ================= 分頁 2：資金熱圖 (修正：嚴格過濾買超 > 0 億) ================= -->
       <main v-if="currentTab === 'bubbles'" class="p-3 space-y-3 flex-1">
         <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3">
           <div class="flex justify-between items-center">
-            <h2 class="text-base font-bold text-white flex items-center gap-1.5">🌐 產業資金流向與個股排名</h2>
+            <h2 class="text-base font-bold text-white flex items-center gap-1.5">🌐 產業資金流向與個股買超排名</h2>
             <span class="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 font-bold rounded">免費觀看</span>
           </div>
-          <p class="text-xs text-slate-400">點擊產業可展開檢視該族群成分股之法人買超金額與排名：</p>
+          <p class="text-xs text-slate-400">點擊產業可展開檢視該族群【淨買超】成分股之排名與金額：</p>
 
           <div class="space-y-2.5 pt-1">
             <div v-for="(stocksInCat, catName) in groupedCategories" :key="catName" class="bg-[#0b0e14] rounded-xl border border-slate-800 overflow-hidden">
@@ -294,27 +292,33 @@
                   <div class="text-[10px] text-slate-400 mt-0.5">包含 {{ stocksInCat.length }} 檔成分股</div>
                 </div>
                 <div class="flex items-center gap-2">
-                  <span class="text-rose-400 font-mono font-bold text-sm">+{{ calcCatTotal(stocksInCat) }} 億</span>
+                  <span :class="calcCatTotal(stocksInCat) >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-mono font-bold text-sm">
+                    {{ calcCatTotal(stocksInCat) >= 0 ? '+' : '' }}{{ calcCatTotal(stocksInCat) }} 億
+                  </span>
                   <span class="text-slate-500 text-xs">{{ expandedCat === catName ? '▲' : '▼' }}</span>
                 </div>
               </div>
 
               <div v-if="expandedCat === catName" class="bg-[#131822] p-3 border-t border-slate-800/80 space-y-2">
-                <div class="text-[11px] text-slate-400 font-bold mb-1">【{{ catName }}】成分股買超排行榜：</div>
+                <div class="text-[11px] text-slate-400 font-bold mb-1">【{{ catName }}】法人買超排行榜（已剔除賣超股）：</div>
                 
-                <div v-for="(st, idx) in stocksInCat.slice(0, displayLimit)" :key="st.code" @click="searchQuery = st.code; currentTab = 'today'" class="flex justify-between items-center p-2 rounded-lg bg-[#0b0e14] border border-slate-800 cursor-pointer hover:border-amber-500/40">
+                <div v-if="getBuyList(stocksInCat).length === 0" class="text-xs text-slate-500 py-2 text-center">
+                  該族群今日無法人淨買超個股
+                </div>
+
+                <div v-else v-for="(st, idx) in getBuyList(stocksInCat).slice(0, displayLimit)" :key="st.code" @click="searchQuery = st.code; currentTab = 'today'" class="flex justify-between items-center p-2 rounded-lg bg-[#0b0e14] border border-slate-800 cursor-pointer hover:border-amber-500/40">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-bold text-amber-400 font-mono w-4">第{{ idx + 1 }}名</span>
                     <span class="text-xs font-bold text-white">{{ st.name }}</span>
                     <span class="text-[10px] text-slate-400 font-mono">{{ st.code }} ({{ st.market }})</span>
                   </div>
-                  <span :class="st.total_net >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-mono font-bold text-xs">
-                    {{ st.total_net >= 0 ? '+' : '' }}{{ st.total_net }} 億
+                  <span class="text-rose-400 font-mono font-bold text-xs">
+                    +{{ st.total_net }} 億
                   </span>
                 </div>
 
-                <button v-if="stocksInCat.length > displayLimit" @click="displayLimit += 20" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold rounded-xl border border-slate-700 mt-1">
-                  ▼ 顯示更多個股 (還有 {{ stocksInCat.length - displayLimit }} 檔)
+                <button v-if="getBuyList(stocksInCat).length > displayLimit" @click="displayLimit += 20" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold rounded-xl border border-slate-700 mt-1">
+                  ▼ 顯示更多個股
                 </button>
               </div>
             </div>
@@ -322,7 +326,7 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 3：籌碼榜單 (完整還原) ================= -->
+      <!-- ================= 分頁 3：籌碼榜單 ================= -->
       <main v-if="currentTab === 'rank'" class="p-3 space-y-3 flex-1">
         <h2 class="text-base font-bold text-white">三大法人買賣超總榜單</h2>
         <div class="space-y-2">
@@ -341,7 +345,7 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 4：個股追蹤 (完整還原) ================= -->
+      <!-- ================= 分頁 4：個股追蹤 ================= -->
       <main v-if="currentTab === 'fav'" class="p-3 space-y-3 flex-1">
         <h2 class="text-base font-bold text-white">個人專屬個股追蹤表</h2>
         <div v-if="favStocksList.length" class="space-y-2">
@@ -357,7 +361,7 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 5：控制中心 (完整還原 VIP 與序號管理) ================= -->
+      <!-- ================= 分頁 5：控制中心 (修正未登入預設 FREE) ================= -->
       <main v-if="currentTab === 'profile'" class="p-3 space-y-4 flex-1">
         <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3">
           <div v-if="currentUser" class="flex justify-between items-center">
@@ -422,7 +426,7 @@
         </div>
       </main>
 
-      <!-- 底部 5 大分頁導覽列 (完整還原) -->
+      <!-- 底部 5 大分頁導覽列 -->
       <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-[#131822]/95 backdrop-blur-md border-t border-slate-800/80 flex justify-around py-2 z-40 text-[10px]">
         <button @click="currentTab = 'today'" :class="currentTab === 'today' ? 'text-amber-400 font-bold' : 'text-slate-400'" class="flex flex-col items-center gap-0.5">
           <span class="text-base">📡</span> 籌碼雷達
@@ -504,7 +508,7 @@
 
         const currentUser = ref(null);
         const isAdmin = ref(false);
-        const isVip = ref(true);
+        const isVip = ref(false); // 預設修回 FREE，不自動試用
 
         const adminPassword = ref('admin888');
         const newAdminPassword = ref('');
@@ -564,11 +568,13 @@
             if (!groups[cat]) groups[cat] = [];
             groups[cat].push(s);
           });
-          Object.keys(groups).forEach(k => {
-            groups[k].sort((a,b) => b.total_net - a.total_net);
-          });
           return groups;
         });
+
+        // 資金熱圖專用：嚴格過濾買超 > 0 億之個股並進行降序排序
+        const getBuyList = (stocksArr) => {
+          return stocksArr.filter(st => st.total_net > 0).sort((a,b) => b.total_net - a.total_net);
+        };
 
         const toggleCat = (catName) => {
           if (expandedCat.value === catName) {
@@ -693,7 +699,7 @@
 
         return {
           isLaunching, currentTab, updateTime, stocks, searchQuery, selectedStock, list1, rankList, favStocksList,
-          customDays, expandedCat, displayLimit, totalStockCount, groupedCategories, toggleCat, calcCatTotal, getCatIcon, calcNetAccumulated, calcAvgCost,
+          customDays, expandedCat, displayLimit, totalStockCount, groupedCategories, getBuyList, toggleCat, calcCatTotal, getCatIcon, calcNetAccumulated, calcAvgCost,
           isRegisterMode, loginEmail, loginPassword, currentUser, isAdmin, isVip, favorites, isFavorite, toggleFavorite,
           newAdminPassword, showRedeemModal, showAdminModal, inputCode, generatedSerial,
           loadData, handleLoginOrRegister, logout, updateAdminPassword, redeemCode, quickTrial, shareApp, generateSerial
