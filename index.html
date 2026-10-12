@@ -47,9 +47,9 @@
           <button @click="loadData" class="px-2.5 py-1 bg-slate-800 text-slate-300 text-xs rounded-lg border border-slate-700 hover:bg-slate-700">🔄 重新整理</button>
         </div>
 
-        <!-- 搜尋框 -->
+        <!-- 搜尋框 (支援全上市+上櫃股票) -->
         <div class="relative">
-          <input v-model="searchQuery" type="text" placeholder="🔍 搜尋股票代號或名稱 (例如: 6155 或 鈞寶)" 
+          <input v-model="searchQuery" type="text" placeholder="🔍 搜尋股票代號或名稱 (支援全台股上市與上櫃)" 
                  class="w-full bg-[#131822] border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400/60 placeholder-slate-500 font-mono">
           <button v-if="searchQuery" @click="searchQuery = ''" class="absolute right-3 top-3 text-xs text-slate-500">✕</button>
         </div>
@@ -57,7 +57,6 @@
         <!-- 個股詳細頁面 -->
         <div v-if="searchQuery.trim()" class="space-y-3">
           <div v-if="selectedStock" class="bg-[#131822] border border-amber-500/40 rounded-2xl p-4 space-y-4 shadow-xl">
-            <!-- 頂部：股票代號與行業族群 (免費) -->
             <div class="flex justify-between items-start">
               <div>
                 <div class="flex items-center gap-2">
@@ -72,14 +71,13 @@
               </button>
             </div>
 
-            <!-- 近 30 日走勢 K 線與成交量圖 (免費) -->
+            <!-- 近 30 日走勢 K 線圖 -->
             <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 space-y-2">
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-400 font-bold">📈 近 30 日股價走勢與成交量 (K線)</span>
                 <span class="font-mono text-white font-bold">{{ selectedStock.price }} <span :class="selectedStock.change >= 0 ? 'text-rose-400' : 'text-emerald-400'">({{ selectedStock.change_pct }})</span></span>
               </div>
               
-              <!-- SVG 簡化 K 線繪製 -->
               <svg viewBox="0 0 300 90" class="w-full h-24 overflow-visible">
                 <path d="M0,45 Q75,30 150,55 T300,25" fill="none" stroke="#eab308" stroke-width="1.2" opacity="0.7"/>
                 <g v-for="(k, i) in (selectedStock.kline || []).slice(0, 30)" :key="i">
@@ -116,14 +114,13 @@
               </div>
             </div>
 
-            <!-- ================= VIP 專屬區：法人均價 / 融資均價 / 資金停留 ================= -->
+            <!-- VIP 專屬區 -->
             <div class="bg-[#0b0e14] p-3.5 rounded-xl border border-slate-800 space-y-3.5">
               <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
                 <span class="text-amber-400 font-bold flex items-center gap-1">🔒 VIP 專屬進階指標</span>
                 <span class="text-[10px] text-slate-500">可自選 1~30 天計算</span>
               </div>
 
-              <!-- 自選天數選擇拉桿 (1~30 天，僅 VIP 可操作) -->
               <div v-if="isVip" class="space-y-1.5 bg-[#131822] p-2.5 rounded-lg border border-slate-800">
                 <div class="flex justify-between text-[11px]">
                   <span class="text-slate-400">選擇計算天數 (1~30天)：</span>
@@ -132,7 +129,6 @@
                 <input v-model="customDays" type="range" min="1" max="30" class="w-full accent-amber-500 cursor-pointer">
               </div>
 
-              <!-- VIP 1: 法人累積買賣超 -->
               <div class="flex justify-between items-center text-xs">
                 <span class="text-slate-300">近 {{ customDays }} 日法人累積金額</span>
                 <span v-if="isVip" :class="calcNetAccumulated(selectedStock, customDays) >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-mono font-bold text-sm">
@@ -141,28 +137,24 @@
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
 
-              <!-- VIP 2: 法人均價 (需要 VIP) -->
               <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
                 <span class="text-slate-300">法人近 {{ customDays }} 日成交均價</span>
                 <span v-if="isVip" class="text-slate-200 font-mono font-bold">{{ calcAvgCost(selectedStock, customDays, 1.02) }} 元</span>
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
 
-              <!-- VIP 3: 融資均價 (需要 VIP) -->
               <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
                 <span class="text-slate-300">融資近 {{ customDays }} 日成交均價</span>
                 <span v-if="isVip" class="text-slate-200 font-mono font-bold">{{ calcAvgCost(selectedStock, customDays, 0.97) }} 元</span>
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
 
-              <!-- VIP 4: 外資持股比率 -->
               <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
                 <span class="text-slate-300">外資持股比率 (每日更新)</span>
                 <span v-if="isVip" class="text-slate-200 font-mono font-bold">{{ selectedStock.foreign_ratio }}</span>
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
 
-              <!-- VIP 5: 資金停留時間與自動分析 (需要 VIP) -->
               <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
                 <span class="text-slate-300">資金停留與籌碼動向</span>
                 <span v-if="isVip" :class="selectedStock.flow_type === '流入' ? 'text-rose-400' : 'text-emerald-400'" class="font-bold">
@@ -186,7 +178,7 @@
           </div>
         </div>
 
-        <!-- 情境 B：主頁預設大盤儀表板 -->
+        <!-- 主頁儀表板 -->
         <div v-else class="space-y-4">
           <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3 shadow-lg">
             <div class="flex justify-between items-center">
@@ -199,8 +191,8 @@
                 <div class="text-rose-400 font-bold text-sm mt-0.5">銀行金融 <span class="text-xs">+87億</span></div>
               </div>
               <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800/80">
-                <span class="text-slate-400 text-[11px]">主力大戶買超</span>
-                <div class="text-rose-400 font-bold text-sm mt-0.5">鴻海 <span class="text-xs">+34億</span></div>
+                <span class="text-slate-400 text-[11px]">上市上櫃總家數</span>
+                <div class="text-amber-400 font-bold text-sm mt-0.5">{{ totalStockCount }} 檔股票</div>
               </div>
             </div>
           </div>
@@ -224,7 +216,7 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 2：資金熱圖 (展開產業細項股票與排名 - 完全免費) ================= -->
+      <!-- ================= 分頁 2：資金熱圖 (分頁渲染，解決卡頓) ================= -->
       <main v-if="currentTab === 'bubbles'" class="p-3 space-y-3 flex-1">
         <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3">
           <div class="flex justify-between items-center">
@@ -248,19 +240,24 @@
                 </div>
               </div>
 
-              <!-- 點開展開產業細項成分股與排名 -->
+              <!-- 展開時預設顯示前 10 名，提供按鈕載入更多（避免卡頓） -->
               <div v-if="expandedCat === catName" class="bg-[#131822] p-3 border-t border-slate-800/80 space-y-2">
                 <div class="text-[11px] text-slate-400 font-bold mb-1">【{{ catName }}】成分股買超排行榜：</div>
-                <div v-for="(st, idx) in stocksInCat" :key="st.code" @click="searchQuery = st.code; currentTab = 'today'" class="flex justify-between items-center p-2 rounded-lg bg-[#0b0e14] border border-slate-800 cursor-pointer">
+                
+                <div v-for="(st, idx) in stocksInCat.slice(0, displayLimit)" :key="st.code" @click="searchQuery = st.code; currentTab = 'today'" class="flex justify-between items-center p-2 rounded-lg bg-[#0b0e14] border border-slate-800 cursor-pointer hover:border-amber-500/40">
                   <div class="flex items-center gap-2">
                     <span class="text-xs font-bold text-amber-400 font-mono w-4">第{{ idx + 1 }}名</span>
                     <span class="text-xs font-bold text-white">{{ st.name }}</span>
-                    <span class="text-[10px] text-slate-400 font-mono">{{ st.code }}</span>
+                    <span class="text-[10px] text-slate-400 font-mono">{{ st.code }} ({{ st.market }})</span>
                   </div>
                   <span :class="st.total_net >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-mono font-bold text-xs">
                     {{ st.total_net >= 0 ? '+' : '' }}{{ st.total_net }} 億
                   </span>
                 </div>
+
+                <button v-if="stocksInCat.length > displayLimit" @click="displayLimit += 20" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold rounded-xl border border-slate-700 mt-1">
+                  ▼ 顯示更多個股 (還有 {{ stocksInCat.length - displayLimit }} 檔)
+                </button>
               </div>
             </div>
           </div>
@@ -441,6 +438,7 @@
         const favorites = ref(['6155', '2330']);
         const customDays = ref(5);
         const expandedCat = ref('銀行金融');
+        const displayLimit = ref(10); // 預設只顯示前 10 名避免卡頓
 
         const isRegisterMode = ref(false);
         const loginEmail = ref('');
@@ -459,6 +457,29 @@
         const inputCode = ref('');
         const generatedSerial = ref('');
 
+        const loadLocalState = () => {
+          try {
+            const savedUser = localStorage.getItem('sr_user');
+            const savedIsAdmin = localStorage.getItem('sr_isAdmin');
+            const savedIsVip = localStorage.getItem('sr_isVip');
+            const savedFavs = localStorage.getItem('sr_favs');
+
+            if (savedUser) currentUser.value = JSON.parse(savedUser);
+            if (savedIsAdmin) isAdmin.value = JSON.parse(savedIsAdmin);
+            if (savedIsVip) isVip.value = JSON.parse(savedIsVip);
+            if (savedFavs) favorites.value = JSON.parse(savedFavs);
+          } catch (e) {
+            console.error('Local storage load error:', e);
+          }
+        };
+
+        const saveLocalState = () => {
+          localStorage.setItem('sr_user', JSON.stringify(currentUser.value));
+          localStorage.setItem('sr_isAdmin', JSON.stringify(isAdmin.value));
+          localStorage.setItem('sr_isVip', JSON.stringify(isVip.value));
+          localStorage.setItem('sr_favs', JSON.stringify(favorites.value));
+        };
+
         const loadData = async () => {
           try {
             const res = await fetch('data.json?' + new Date().getTime());
@@ -469,6 +490,8 @@
             console.error('Data load error:', e);
           }
         };
+
+        const totalStockCount = computed(() => Object.keys(stocks.value).length);
 
         const selectedStock = computed(() => {
           if (!searchQuery.value.trim()) return null;
@@ -490,7 +513,12 @@
         });
 
         const toggleCat = (catName) => {
-          expandedCat.value = expandedCat.value === catName ? null : catName;
+          if (expandedCat.value === catName) {
+            expandedCat.value = null;
+          } else {
+            expandedCat.value = catName;
+            displayLimit.value = 10; // 切換時重置顯示數量
+          }
         };
 
         const calcCatTotal = (stocksArr) => {
@@ -498,7 +526,7 @@
         };
 
         const getCatIcon = (cat) => {
-          const icons = { "銀行金融": "🏦", "被動元件": "🔌", "貨櫃航運": "🚢", "晶圓代工": "💻", "PCB 載板": "📟", "AI 伺服器": "🤖" };
+          const icons = { "銀行金融": "🏦", "被動與網通": "🔌", "貨櫃與航運": "🚢", "半導體與電子": "💻", "光電與生技": "🔬", "電子零組件": "📟", "上櫃熱門股": "📈" };
           return icons[cat] || "📊";
         };
 
@@ -536,6 +564,7 @@
           } else {
             favorites.value.push(code);
           }
+          saveLocalState();
         };
 
         const handleLoginOrRegister = () => {
@@ -548,20 +577,23 @@
             currentUser.value = { name: '魏霆瑋 (最高管理員)', email: 'admin@stockradar.app' };
             isAdmin.value = true;
             isVip.value = true;
-            alert('最高管理員身分登入成功！已開啟控制台與無限 VIP 權限。');
+            alert('最高管理員身分登入成功！已為您保持永久登入狀態。');
           } else {
             currentUser.value = { name: loginEmail.value.split('@')[0], email: loginEmail.value };
             isAdmin.value = false;
             isVip.value = false;
-            alert(isRegisterMode.value ? '註冊成功並已登入！' : '登入成功！目前身分：免費用戶。');
+            alert(isRegisterMode.value ? '註冊成功並已登入！已為您保持自動登入。' : '登入成功！目前身分：免費用戶。');
           }
           loginPassword.value = '';
+          saveLocalState();
         };
 
         const logout = () => {
           currentUser.value = null;
           isAdmin.value = false;
           isVip.value = false;
+          saveLocalState();
+          alert('已成功登出！');
         };
 
         const updateAdminPassword = () => {
@@ -578,6 +610,7 @@
             isVip.value = true;
             showRedeemModal.value = false;
             inputCode.value = '';
+            saveLocalState();
           }
         };
 
@@ -585,6 +618,7 @@
           alert('已為您成功免費開通 7 天 VIP 試用權限！');
           isVip.value = true;
           showRedeemModal.value = false;
+          saveLocalState();
         };
 
         const shareApp = () => {
@@ -596,13 +630,14 @@
         };
 
         onMounted(() => {
+          loadLocalState();
           loadData();
           setTimeout(() => { isLaunching.value = false; }, 1600);
         });
 
         return {
           isLaunching, currentTab, updateTime, stocks, searchQuery, selectedStock, list1, rankList, favStocksList,
-          customDays, expandedCat, groupedCategories, toggleCat, calcCatTotal, getCatIcon, calcNetAccumulated, calcAvgCost,
+          customDays, expandedCat, displayLimit, totalStockCount, groupedCategories, toggleCat, calcCatTotal, getCatIcon, calcNetAccumulated, calcAvgCost,
           isRegisterMode, loginEmail, loginPassword, currentUser, isAdmin, isVip, favorites, isFavorite, toggleFavorite,
           newAdminPassword, showRedeemModal, showAdminModal, inputCode, generatedSerial,
           loadData, handleLoginOrRegister, logout, updateAdminPassword, redeemCode, quickTrial, shareApp, generateSerial
