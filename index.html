@@ -1,236 +1,64 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StockRadar 籌碼攻防雷達 (商業營運版)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StockRadar 籌碼雷達</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <style>
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
-    ::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 4px; }
-    .blur-vip { filter: blur(5px); user-select: none; }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen">
-  <div id="app" class="max-w-7xl mx-auto px-4 py-6">
-    <!-- 頂部導覽列 -->
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-800 gap-4">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4">
+  <div id="app" class="max-w-md mx-auto space-y-4">
+    <!-- 頁首標題 -->
+    <div class="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
       <div>
-        <div class="flex items-center gap-2">
-          <!-- 點擊 Logo 觸發管理員後台 -->
-          <span @click="openAdminModal" class="p-2 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-lg text-slate-950 font-black text-xl shadow-lg shadow-amber-500/20 cursor-pointer select-none" title="點擊開啟管理後台">🎯</span>
-          <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-            StockRadar 籌碼攻防雷達
-            <span v-if="isVip" class="text-[10px] px-2.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full font-bold flex items-center gap-1">
-              👑 VIP 剩餘 {{ vipRemainingDays }} 天
-            </span>
-            <span v-else class="text-[10px] px-2 py-0.5 bg-slate-800 text-slate-400 rounded-full">免費基礎版</span>
-          </h1>
+        <h1 class="text-xl font-bold text-amber-400">StockRadar 籌碼攻防雷達</h1>
+        <p class="text-xs text-slate-400">更新時間：{{ updateTime }}</p>
+      </div>
+      <button @click="loadData" class="px-3 py-1 bg-slate-800 text-xs rounded-lg border border-slate-700 hover:bg-slate-700">重新整理</button>
+    </div>
+
+    <!-- 搜尋框 -->
+    <div class="space-y-2">
+      <input v-model="searchQuery" type="text" placeholder="搜尋股票代號或名稱 (如 6155 或 鈞寶)" 
+             class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-amber-400">
+    </div>
+
+    <!-- 搜尋結果卡片 (支援單獨搜尋個股看資訊) -->
+    <div v-if="searchResult" class="bg-slate-900 border border-amber-500/50 rounded-2xl p-4 space-y-3">
+      <div class="flex justify-between items-start">
+        <div>
+          <span class="text-xs px-2 py-0.5 bg-amber-500/10 text-amber-400 rounded-md border border-amber-500/20">{{ searchResult.market }}</span>
+          <h2 class="text-2xl font-extrabold text-white mt-1">{{ searchResult.code }} <span class="text-lg font-normal text-slate-300">{{ searchResult.name }}</span></h2>
         </div>
-        <p class="text-xs text-slate-400 mt-1">更新時間：<span class="font-mono text-cyan-300">{{ updateTime }}</span>（共 {{ totalCount }} 檔標的）</p>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button v-if="!isVip" @click="showVipModal = true" class="px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-950 font-bold text-xs rounded-lg shadow-lg shadow-amber-500/10 transition flex items-center gap-1">
-          ✨ 升級 VIP 成本數據
-        </button>
-        <button v-else @click="clearVip" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-lg border border-slate-700">
-          登出 VIP
-        </button>
-        <button @click="fetchData" :disabled="loading" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 rounded-lg border border-slate-700">
-          🔄 重新整理
-        </button>
-      </div>
-    </header>
-
-    <!-- 工具列：搜尋與市場分類 -->
-    <div class="my-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80">
-      <div class="relative w-full sm:w-72">
-        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 text-sm">🔍</span>
-        <input v-model="searchQuery" type="text" placeholder="搜尋股票代號或名稱..." class="w-full pl-9 pr-8 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500" />
+      <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-sm">
+        <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
+          <div class="text-xs text-slate-400">外資買賣超</div>
+          <div :class="searchResult.foreign >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-base mt-0.5">
+            {{ searchResult.foreign >= 0 ? '+' : '' }}{{ searchResult.foreign }} 億
+          </div>
+        </div>
+        <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/80">
+          <div class="text-xs text-slate-400">投信買賣超</div>
+          <div :class="searchResult.trust >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-base mt-0.5">
+            {{ searchResult.trust >= 0 ? '+' : '' }}{{ searchResult.trust }} 億
+          </div>
+        </div>
       </div>
 
-      <div class="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs w-full sm:w-auto justify-center">
-        <button v-for="m in marketOptions" :key="m.value" @click="selectedMarket = m.value" :class="selectedMarket === m.value ? 'bg-amber-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'" class="px-4 py-1 rounded-md transition">
-          {{ m.label }}
-        </button>
+      <div class="bg-slate-950 p-3 rounded-lg flex justify-between items-center text-xs">
+        <span class="text-slate-400">法人合計買賣超</span>
+        <span :class="searchResult.total_net >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold text-sm">
+          {{ searchResult.total_net >= 0 ? '+' : '' }}{{ searchResult.total_net }} 億
+        </span>
       </div>
     </div>
 
-    <!-- 主內容區 -->
-    <main>
-      <div v-if="loading" class="text-center py-20 bg-slate-900/30 rounded-2xl border border-slate-800/50">
-        <div class="inline-block animate-spin text-3xl mb-3">🌀</div>
-        <p class="text-slate-400 text-sm">正在載入全台股最新三大法人與 VIP 成本數據...</p>
-      </div>
-
-      <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <!-- 第一象限：土洋同步鎖碼 -->
-        <div class="bg-gradient-to-b from-red-950/30 to-slate-900/60 border border-red-500/30 rounded-2xl p-4 shadow-lg">
-          <div class="flex justify-between items-center mb-3 pb-2 border-b border-red-500/20">
-            <span class="text-xs font-bold text-red-400 flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span> 🔥 土洋同步鎖碼 (外資+ 投信+)
-            </span>
-            <span class="text-[11px] font-mono text-slate-400">共 {{ filteredBothBuy.length }} 檔</span>
-          </div>
-
-          <div class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-            <div v-for="item in filteredBothBuy" :key="item.code" class="bg-slate-950/90 p-3 rounded-xl border border-slate-800/80">
-              <div class="flex justify-between items-center mb-2">
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-xs px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 font-bold">{{ item.code }}</span>
-                  <span class="font-bold text-sm text-slate-100">{{ item.name }}</span>
-                  <span :class="item.market === '上市' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20'" class="text-[10px] px-1 border rounded">{{ item.market }}</span>
-                </div>
-                <div class="font-mono text-xs space-x-2">
-                  <span class="text-red-400">外: +{{ item.foreign }} 張</span>
-                  <span class="text-amber-400">投: +{{ item.trust }} 張</span>
-                </div>
-              </div>
-
-              <div class="mt-2 pt-2 border-t border-slate-800/80 flex justify-between items-center bg-slate-900/50 p-2 rounded-lg">
-                <div class="text-[11px]">
-                  <span class="text-amber-400 font-bold">👑 主力籌碼狀態：</span>
-                  <span :class="{'blur-vip': !isVip}">{{ isVip ? item.vip_data.status : '🔒 解鎖 VIP 查看主力成本狀態' }}</span>
-                </div>
-                <div class="text-[11px] font-mono">
-                  <span class="text-slate-400">籌碼沉澱度：</span>
-                  <span :class="{'blur-vip': !isVip}" class="text-amber-300 font-bold">{{ isVip ? item.vip_data.score + '分' : '99分' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 第二象限：投信護盤作多 -->
-        <div class="bg-gradient-to-b from-amber-950/30 to-slate-900/60 border border-amber-500/30 rounded-2xl p-4 shadow-lg">
-          <div class="flex justify-between items-center mb-3 pb-2 border-b border-amber-500/20">
-            <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> 🛡️ 投信內資抗外資 (外資- 投信+)
-            </span>
-            <span class="text-[11px] font-mono text-slate-400">共 {{ filteredTrustBuyOnly.length }} 檔</span>
-          </div>
-
-          <div class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-            <div v-for="item in filteredTrustBuyOnly" :key="item.code" class="bg-slate-950/90 p-3 rounded-xl border border-slate-800/80">
-              <div class="flex justify-between items-center mb-2">
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-xs px-1.5 py-0.5 bg-slate-800 rounded text-slate-300 font-bold">{{ item.code }}</span>
-                  <span class="font-bold text-sm text-slate-100">{{ item.name }}</span>
-                  <span :class="item.market === '上市' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20'" class="text-[10px] px-1 border rounded">{{ item.market }}</span>
-                </div>
-                <div class="font-mono text-xs space-x-2">
-                  <span class="text-emerald-400">外: {{ item.foreign }} 張</span>
-                  <span class="text-amber-400">投: +{{ item.trust }} 張</span>
-                </div>
-              </div>
-
-              <div class="mt-2 pt-2 border-t border-slate-800/80 flex justify-between items-center bg-slate-900/50 p-2 rounded-lg">
-                <div class="text-[11px]">
-                  <span class="text-amber-400 font-bold">👑 主力籌碼狀態：</span>
-                  <span :class="{'blur-vip': !isVip}">{{ isVip ? item.vip_data.status : '🔒 解鎖 VIP 查看主力成本狀態' }}</span>
-                </div>
-                <div class="text-[11px] font-mono">
-                  <span class="text-slate-400">籌碼沉澱度：</span>
-                  <span :class="{'blur-vip': !isVip}" class="text-amber-300 font-bold">{{ isVip ? item.vip_data.score + '分' : '99分' }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- 1. VIP 訂閱 Modal -->
-    <div v-if="showVipModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="bg-slate-900 border border-amber-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
-        <button @click="showVipModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
-
-        <div class="text-center mb-6">
-          <div class="w-12 h-12 bg-amber-500/20 text-amber-400 rounded-full flex items-center justify-center text-2xl mx-auto mb-2 border border-amber-500/30">👑</div>
-          <h3 class="text-lg font-bold text-white">升級 StockRadar VIP 專屬權限</h3>
-          <p class="text-xs text-slate-400 mt-1">解鎖與 Tide 同款的主力成本與籌碼沉澱指標</p>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3 mb-6">
-          <div class="border border-amber-500/30 bg-amber-500/5 p-3 rounded-xl text-center relative overflow-hidden">
-            <span class="absolute top-0 right-0 bg-amber-500 text-slate-950 font-bold text-[9px] px-1.5 py-0.5 rounded-bl">月費</span>
-            <div class="text-xs text-amber-300 font-bold mb-1">標準方案</div>
-            <div class="text-xl font-bold font-mono text-white">NT$ {{ pricing.monthly }} <span class="text-[10px] text-slate-400 font-normal">/月</span></div>
-          </div>
-
-          <div class="border-2 border-amber-500 bg-amber-500/10 p-3 rounded-xl text-center relative overflow-hidden">
-            <span class="absolute top-0 right-0 bg-red-500 text-white font-bold text-[9px] px-1.5 py-0.5 rounded-bl">省最高</span>
-            <div class="text-xs text-amber-300 font-bold mb-1">年度方案</div>
-            <div class="text-xl font-bold font-mono text-white">NT$ {{ pricing.yearly }} <span class="text-[10px] text-slate-400 font-normal">/年</span></div>
-          </div>
-        </div>
-
-        <div class="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
-          <label class="text-xs text-slate-300 font-bold block">輸入序號解鎖：</label>
-          <div class="flex gap-2">
-            <input v-model="vipCodeInput" type="text" placeholder="請輸入獲得的 VIP 序號..." class="flex-1 px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:border-amber-500 focus:outline-none" />
-            <button @click="unlockVip" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-lg transition">啟用</button>
-          </div>
-          <p class="text-[11px] text-slate-500">測試序號：<code class="text-amber-400">TEST30</code> (免費體驗 30 天)</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. 管理員控制台 Modal -->
-    <div v-if="showAdminModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
-      <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-        <button @click="showAdminModal = false" class="absolute top-4 right-4 text-slate-400 hover:text-white">✕</button>
-
-        <h3 class="text-lg font-bold text-white flex items-center gap-2 mb-4">⚙️ 管理員營運控制台</h3>
-
-        <div v-if="!adminAuthenticated" class="space-y-3">
-          <p class="text-xs text-slate-400">請輸入管理員密碼以進入設定區：</p>
-          <input v-model="adminPasswordInput" type="password" placeholder="初始密碼: admin888" class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-xs text-white" />
-          <button @click="verifyAdmin" class="w-full py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs rounded-lg">登入管理後台</button>
-        </div>
-
-        <div v-else class="space-y-5 text-xs">
-          <!-- 更改管理密碼 -->
-          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-            <h4 class="font-bold text-emerald-400">🔐 修改管理員密碼</h4>
-            <div class="flex gap-2">
-              <input v-model="newAdminPassword" type="password" placeholder="輸入新的管理員密碼..." class="flex-1 px-3 py-1.5 bg-slate-900 border border-slate-700 rounded text-white" />
-              <button @click="changeAdminPassword" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-bold">儲存</button>
-            </div>
-          </div>
-
-          <!-- 設定價格 -->
-          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-            <h4 class="font-bold text-cyan-400">💰 設定對外顯示的價格</h4>
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="text-slate-400 block mb-1">月費 (NT$)</label>
-                <input v-model.number="pricing.monthly" type="number" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded text-white" />
-              </div>
-              <div>
-                <label class="text-slate-400 block mb-1">年費 (NT$)</label>
-                <input v-model.number="pricing.yearly" type="number" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded text-white" />
-              </div>
-            </div>
-            <button @click="savePricing" class="px-3 py-1 bg-cyan-600 text-white rounded">儲存價格</button>
-          </div>
-
-          <!-- 產生天數序號 -->
-          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
-            <h4 class="font-bold text-amber-400">🔑 產生免費 VIP 序號</h4>
-            <div class="flex items-center gap-2">
-              <input v-model.number="newKeyDays" type="number" placeholder="天數 (例: 30 或 365)" class="w-full px-3 py-1.5 bg-slate-900 border border-slate-700 rounded text-white" />
-              <button @click="generateCustomKey" class="px-4 py-1.5 bg-amber-500 text-slate-950 font-bold rounded">產生</button>
-            </div>
-            <div v-if="generatedKey" class="p-2 bg-slate-900 rounded border border-amber-500/40 text-center font-mono">
-              新序號：<span class="text-amber-300 font-bold select-all">{{ generatedKey }}</span> (有效 {{ generatedKeyDays }} 天)
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- 搜尋無結果提示 -->
+    <div v-else-if="searchQuery && !searchResult" class="text-center py-6 text-slate-500 text-sm">
+      未找到股票「{{ searchQuery }}」，請確認代號或等待爬蟲更新完畢。
     </div>
   </div>
 
@@ -238,127 +66,30 @@
     const { createApp, ref, computed, onMounted } = Vue;
     createApp({
       setup() {
-        const stocks = ref([]);
         const updateTime = ref('--');
-        const totalCount = ref(0);
-        const loading = ref(true);
-
-        const showVipModal = ref(false);
-        const showAdminModal = ref(false);
-        const adminAuthenticated = ref(false);
-        const adminPasswordInput = ref('');
-        const newAdminPassword = ref('');
-        const currentAdminPassword = ref('admin888');
-
-        const vipCodeInput = ref('');
-        const vipExpiryDate = ref(null);
-        const pricing = ref({ monthly: 299, yearly: 2990 });
-
-        const newKeyDays = ref(30);
-        const generatedKey = ref('');
-        const generatedKeyDays = ref(0);
-
+        const stocks = ref({});
         const searchQuery = ref('');
-        const selectedMarket = ref('ALL');
-        const marketOptions = [{ label: '全部市場', value: 'ALL' }, { label: '上市', value: '上市' }, { label: '上櫃', value: '上櫃' }];
 
-        onMounted(() => {
-          fetchData();
-          const savedPass = localStorage.getItem('stock_admin_pass');
-          if (savedPass) currentAdminPassword.value = savedPass;
-          const savedPricing = localStorage.getItem('stock_pricing');
-          if (savedPricing) pricing.value = JSON.parse(savedPricing);
-          const savedVipExpiry = localStorage.getItem('stock_vip_expiry');
-          if (savedVipExpiry) vipExpiryDate.value = new Date(savedVipExpiry);
-        });
-
-        const isVip = computed(() => vipExpiryDate.value && new Date() < vipExpiryDate.value);
-        const vipRemainingDays = computed(() => vipExpiryDate.value ? Math.max(0, Math.ceil((vipExpiryDate.value - new Date()) / (1000 * 60 * 60 * 24))) : 0);
-
-        const unlockVip = () => {
-          const code = vipCodeInput.value.trim().toUpperCase();
-          let days = 0;
-          if (code === 'TEST30') days = 30;
-          else if (code === 'TEST365') days = 365;
-          else if (code.startsWith('VIP-')) {
-            const parts = code.split('-');
-            if (parts.length >= 2 && !isNaN(parts[1])) days = parseInt(parts[1]);
-          }
-
-          if (days > 0) {
-            const expiry = new Date();
-            expiry.setDate(expiry.getDate() + days);
-            vipExpiryDate.value = expiry;
-            localStorage.setItem('stock_vip_expiry', expiry.toISOString());
-            showVipModal.value = false;
-            vipCodeInput.value = '';
-            alert(`🎉 成功啟用 VIP！天數：${days} 天。`);
-          } else {
-            alert('❌ 序號無效！');
-          }
-        };
-
-        const clearVip = () => {
-          vipExpiryDate.value = null;
-          localStorage.removeItem('stock_vip_expiry');
-          alert('已退出 VIP');
-        };
-
-        const openAdminModal = () => { showAdminModal.value = true; };
-        const verifyAdmin = () => {
-          if (adminPasswordInput.value === currentAdminPassword.value) adminAuthenticated.value = true;
-          else alert('密碼錯誤！');
-        };
-
-        const changeAdminPassword = () => {
-          if (!newAdminPassword.value || newAdminPassword.value.trim().length < 4) return alert('請輸入至少 4 位數密碼！');
-          currentAdminPassword.value = newAdminPassword.value.trim();
-          localStorage.setItem('stock_admin_pass', currentAdminPassword.value);
-          newAdminPassword.value = '';
-          alert('🔐 密碼修改成功！');
-        };
-
-        const savePricing = () => {
-          localStorage.setItem('stock_pricing', JSON.stringify(pricing.value));
-          alert('價格已儲存！');
-        };
-
-        const generateCustomKey = () => {
-          if (!newKeyDays.value || newKeyDays.value <= 0) return alert('請輸入有效天數');
-          const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
-          generatedKey.value = `VIP-${newKeyDays.value}-${randomStr}`;
-          generatedKeyDays.value = newKeyDays.value;
-        };
-
-        const fetchData = async () => {
-          loading.value = true;
+        const loadData = async () => {
           try {
-            const res = await fetch('./data.json?t=' + new Date().getTime());
+            const res = await fetch('data.json?' + new Date().getTime());
             const data = await res.json();
-            stocks.value = data.stocks || [];
-            updateTime.value = data.update_time || '未知';
-            totalCount.value = data.total_count || stocks.value.length;
-          } catch (e) { console.error(e); }
-          finally { loading.value = false; }
+            updateTime.value = data.update_time || '今日';
+            stocks.value = data.stocks || {};
+          } catch (e) {
+            console.error('Data load error:', e);
+          }
         };
 
-        const filteredStocks = computed(() => {
-          return stocks.value.filter(s => {
-            const matchMarket = selectedMarket.value === 'ALL' || s.market === selectedMarket.value;
-            const query = searchQuery.value.trim().toLowerCase();
-            return matchMarket && (!query || s.code.toLowerCase().includes(query) || s.name.toLowerCase().includes(query));
-          });
+        const searchResult = computed(() => {
+          if (!searchQuery.value.trim()) return null;
+          const q = searchQuery.value.trim().toLowerCase();
+          return Object.values(stocks.value).find(s => s.code.toLowerCase().includes(q) || s.name.toLowerCase().includes(q));
         });
 
-        const filteredBothBuy = computed(() => filteredStocks.value.filter(s => s.quadrant === 'bothBuy').sort((a, b) => (b.trust + b.foreign) - (a.trust + a.foreign)));
-        const filteredTrustBuyOnly = computed(() => filteredStocks.value.filter(s => s.trust > 0 && s.foreign <= 0).sort((a, b) => b.trust - a.trust));
+        onMounted(() => loadData());
 
-        return { 
-          stocks, updateTime, totalCount, loading, isVip, vipRemainingDays, showVipModal, showAdminModal, 
-          adminAuthenticated, adminPasswordInput, newAdminPassword, openAdminModal, verifyAdmin, changeAdminPassword, 
-          pricing, savePricing, newKeyDays, generatedKey, generatedKeyDays, generateCustomKey, vipCodeInput, 
-          unlockVip, clearVip, searchQuery, selectedMarket, marketOptions, fetchData, filteredBothBuy, filteredTrustBuyOnly 
-        };
+        return { updateTime, searchQuery, searchResult, loadData };
       }
     }).mount('#app');
   </script>
