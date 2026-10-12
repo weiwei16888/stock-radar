@@ -4,29 +4,30 @@ import time
 
 def fetch_all_data():
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0.0.0 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'X-Requested-With': 'XMLHttpRequest'
     }
     
     stock_dict = {}
     date_str = "最新盤後"
 
     def clean_num(val):
-        if not val or val == '--':
+        if not val or val == '--': 
             return 0.0
         s = str(val).replace(',', '').replace('+', '').strip()
-        try:
+        try: 
             return float(s)
-        except:
+        except: 
             return 0.0
 
-    # 1. 抓取 TWSE 官方每日個股行情 (每日精準收盤價、當日漲跌價差、最高價、最低價)
+    # 1. 抓取 TWSE 全上市股票每日收盤行情 (動態解析全市場收盤價、漲跌、最高、最低)
     try:
         url_price = "https://www.twse.com.tw/rwd/zh/afterTrading/MI_INDEX?response=json&type=ALLBUT0999"
         res = requests.get(url_price, headers=headers, timeout=15).json()
         
         if res.get('stat') == 'OK':
             date_str = res.get('date', date_str)
-            # 尋找包含股票行情的表格
             tables = res.get('tables', [])
             target_table = None
             for t in tables:
@@ -41,14 +42,15 @@ def fetch_all_data():
                 idx_high = fields.index('最高價')
                 idx_low = fields.index('最低價')
                 idx_close = fields.index('收盤價')
-                idx_sign = fields.index('漲跌(+/-)')
                 idx_change = fields.index('漲跌價差')
+                idx_sign = fields.index('漲跌(+/-)')
 
                 for row in target_table['data']:
                     code = str(row[idx_code]).strip()
                     name = str(row[idx_name]).strip()
                     
-                    if not code.isdigit() or len(code) != 4:
+                    # 篩選標準 4 碼股票代號
+                    if not code.isdigit() or len(code) != 4: 
                         continue
 
                     close_p = clean_num(row[idx_close])
@@ -57,14 +59,14 @@ def fetch_all_data():
                     change_v = clean_num(row[idx_change])
                     sign = str(row[idx_sign])
 
-                    if '-' in sign or '綠' in sign:
+                    if '-' in sign or '綠' in sign: 
                         change_v = -abs(change_v)
                     
                     prev_p = round(close_p - change_v, 2) if close_p > 0 else close_p
                     pct_val = round((change_v / prev_p * 100), 2) if prev_p > 0 else 0.0
                     pct_str = f"{'+' if change_v > 0 else ''}{pct_val}%"
 
-                    # 產業分類
+                    # 官方產業分類推斷
                     if code.startswith('28'): category = "金融保險"
                     elif code.startswith('26'): category = "航運業"
                     elif code.startswith('23') or code.startswith('24'): category = "半導體"
@@ -102,7 +104,7 @@ def fetch_all_data():
 
     time.sleep(1)
 
-    # 2. 抓取 TWSE 三大法人當日買賣超（精算金額）
+    # 2. 抓取 TWSE 全市場三大法人買賣超，自動與當日收盤價換算為「億元」
     try:
         url_fund = "https://www.twse.com.tw/rwd/zh/fund/T86?response=json&selectType=ALL"
         res_fund = requests.get(url_fund, headers=headers, timeout=15).json()
@@ -111,11 +113,13 @@ def fetch_all_data():
             for row in res_fund['data']:
                 code = str(row[0]).strip()
                 if code in stock_dict:
-                    f_shares = clean_num(row[4]) / 1000.0  # 張數
-                    t_shares = clean_num(row[10]) / 1000.0 # 張數
-                    d_shares = clean_num(row[11]) / 1000.0 # 張數
+                    f_shares = clean_num(row[4]) / 1000.0  # 外資張數
+                    t_shares = clean_num(row[10]) / 1000.0 # 投信張數
+                    d_shares = clean_num(row[11]) / 1000.0 # 自營商張數
 
                     price = stock_dict[code]["price"]
+                    
+                    # 精準金額換算 (億元) = 張數 * 1000 * 股價 / 1,0000,0000
                     f_amt = round((f_shares * 1000 * price) / 100000000.0, 2) if price > 0 else 0.0
                     t_amt = round((t_shares * 1000 * price) / 100000000.0, 2) if price > 0 else 0.0
                     d_amt = round((d_shares * 1000 * price) / 100000000.0, 2) if price > 0 else 0.0
