@@ -1,0 +1,23 @@
+name: Daily Stock Data Update
+
+on:
+  schedule:
+    - cron: '30 7 * * 1-5' # 台灣時間禮拜一至五 15:30
+  workflow_dispatch:
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - run: pip install requests
+      - run: python fetch_data.py
+      - run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data.json
+          git commit -m "Auto update daily stock data" || exit 0
+          git push
