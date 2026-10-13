@@ -384,7 +384,7 @@
               {{ isRegisterMode ? '建立新帳號' : '登入帳號' }}
             </button>
 
-            <!-- 新增：Google 帳號快速登入 / 註冊 -->
+            <!-- Google 帳號快速登入 / 註冊 -->
             <div class="pt-2 border-t border-slate-800 text-center">
               <button @click="loginWithGoogle" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
                 <span>🌐</span> 使用 Google 帳號快速登入 / 註冊
@@ -585,7 +585,10 @@
             if (savedIsVip) isVip.value = JSON.parse(savedIsVip);
             if (savedFavs) favorites.value = JSON.parse(savedFavs);
             if (savedDB) userDatabase.value = JSON.parse(savedDB);
-            if (savedSerials) validSerials.value = JSON.parse(savedSerials);
+            if (savedSerials) {
+              const parsed = JSON.parse(savedSerials);
+              validSerials.value = { ...validSerials.value, ...parsed };
+            }
           } catch (e) { console.error(e); }
         };
 
@@ -701,7 +704,6 @@
           return serial;
         };
 
-        // 登入與註冊（問題二修復：未註冊嚴格禁止登入）
         const handleLoginOrRegister = () => {
           const email = loginEmail.value.trim().toLowerCase();
           const pwd = loginPassword.value.trim();
@@ -711,14 +713,12 @@
             return;
           }
 
-          // 管理員登入
           if (email === 'admin@stockradar.app' && pwd === adminPassword.value) {
             currentUser.value = { name: '最高管理員', email: 'admin@stockradar.app' };
             isAdmin.value = true;
             isVip.value = true;
             alert('最高管理員身分登入成功！已為您保持永久登入狀態。');
           } else if (isRegisterMode.value) {
-            // 建立新帳號
             if (userDatabase.value[email]) {
               alert('該電子信箱已經註冊過！請直接切換至「登入帳號」。');
               return;
@@ -752,13 +752,14 @@
             isAdmin.value = false;
             isVip.value = false;
 
+            saveLocalState();
+
             if (pendingSerialNotice) {
               alert(`帳號註冊成功！\n\n${pendingSerialNotice}`);
             } else {
               alert('帳號註冊成功！已為您自動登入。');
             }
           } else {
-            // 一般登入：未註冊帳號嚴格阻擋
             if (!userDatabase.value[email]) {
               alert('找不到此帳號！請確認信箱是否輸入正確，或先點擊「免費註冊」建立帳號。');
               return;
@@ -773,10 +774,13 @@
             isAdmin.value = false;
             isVip.value = false;
 
+            saveLocalState();
+
             if (userDatabase.value[email].pendingSerial) {
               const rewardCode = userDatabase.value[email].pendingSerial;
               alert(`🎁 歡迎回來！您介紹好友註冊獲贈的 7 天 VIP 序號為：\n👉 ${rewardCode}\n\n請複製該序號並至「輸入VIP序號」進行兌換！`);
               delete userDatabase.value[email].pendingSerial;
+              saveLocalState();
             } else {
               alert('登入成功！目前身分：免費用戶。');
             }
@@ -787,7 +791,6 @@
           saveLocalState();
         };
 
-        // 問題三新增：Google 帳號快速登入 / 註冊
         const loginWithGoogle = () => {
           const gEmail = "user." + Math.floor(1000 + Math.random() * 9000) + "@gmail.com";
           if (!userDatabase.value[gEmail]) {
@@ -873,13 +876,17 @@
           }
         };
 
-        // 問題一修復：序號防呆大寫對齊驗證
+        // 序號兌換核心修復 (即時對齊本地資料庫)
         const redeemCode = () => {
-          const code = inputCode.value.trim().toUpperCase();
-          if (!code) {
+          loadLocalState(); // 即時載入最新序號庫
+          const rawInput = inputCode.value.trim().toUpperCase();
+          if (!rawInput) {
             alert('請輸入 VIP 體驗序號！');
             return;
           }
+
+          // 清理可能混入的非英數格式
+          const code = rawInput.replace(/[^A-Z0-9-]/g, '');
 
           if (validSerials.value[code]) {
             if (validSerials.value[code].used) {
@@ -894,7 +901,7 @@
             saveLocalState();
             alert(`🎉 VIP 序號兌換成功！已成功升級解鎖 ${validSerials.value[code].days || 30} 天 VIP 進階權限。`);
           } else {
-            alert('無效的 VIP 序號！請確認序號是否輸入正確。');
+            alert(`無效的 VIP 序號！\n您輸入的序號：${code}\n請確認管理員產生的序號是否複製完整。`);
           }
         };
 
@@ -909,13 +916,16 @@
           alert(`🎁 您的專屬好友推薦碼為：${codeStr}\n\n發送給好友於註冊時填寫，好友註冊成功後雙方皆可自動獲贈 7 天 VIP 序號！`);
         };
 
-        // 問題四修復：支援自訂天數產序號
+        // 產生自訂天數序號並即時寫入本地資料庫
         const generateSerial = () => {
           const days = parseInt(customSerialDays.value) || 30;
           const newCode = generateLongSerial("SRVIP");
+          
           validSerials.value[newCode] = { days: days, used: false };
-          generatedSerial.value = `${newCode} (${days}天權限)`;
-          saveLocalState();
+          generatedSerial.value = newCode;
+          
+          saveLocalState(); // 立刻寫入 localStorage
+          alert(`✅ 成功產生 ${days} 天 VIP 防破解序號：\n\n👉 ${newCode}\n\n已成功紀錄入系統，可立刻進行兌換！`);
         };
 
         onMounted(() => {
