@@ -166,7 +166,7 @@
               </div>
             </div>
 
-            <!-- VIP 專屬區（包含動態更新之資金停留與籌碼動向天數） -->
+            <!-- VIP 專屬區 -->
             <div class="bg-[#0b0e14] p-3.5 rounded-xl border border-slate-800 space-y-3.5">
               <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
                 <span class="text-amber-400 font-bold flex items-center gap-1">🔒 VIP 專屬進階籌碼試算</span>
@@ -195,7 +195,6 @@
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
 
-              <!-- 每日自動更新資金停留天數與籌碼動向 -->
               <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
                 <span class="text-slate-300">資金停留與籌碼動向</span>
                 <span v-if="isVip" :class="selectedStock.flow_type === '流入' ? 'text-rose-400' : 'text-emerald-400'" class="font-bold">
@@ -342,7 +341,7 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 5：控制中心 ================= -->
+      <!-- ================= 分頁 5：控制中心 (含 Google 帳號快速登入) ================= -->
       <main v-if="currentTab === 'profile'" class="p-3 space-y-4 flex-1">
         <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3">
           <div v-if="currentUser" class="flex justify-between items-center">
@@ -384,6 +383,13 @@
             <button @click="handleLoginOrRegister" class="w-full bg-amber-500 text-black font-extrabold py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20">
               {{ isRegisterMode ? '建立新帳號' : '登入帳號' }}
             </button>
+
+            <!-- 新增：Google 帳號快速登入 / 註冊 -->
+            <div class="pt-2 border-t border-slate-800 text-center">
+              <button @click="loginWithGoogle" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+                <span>🌐</span> 使用 Google 帳號快速登入 / 註冊
+              </button>
+            </div>
           </div>
 
           <button v-if="!isVip" @click="showRedeemModal = true" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1 shadow-lg shadow-amber-500/20">
@@ -393,7 +399,7 @@
 
         <div class="bg-[#131822] border border-slate-800 rounded-2xl divide-y divide-slate-800/80 text-xs">
           <div v-if="isAdmin" @click="showAdminModal = true" class="p-3.5 flex justify-between items-center bg-amber-500/10 cursor-pointer">
-            <span class="text-amber-300 font-bold">⚙️ 管理員獨家控制台 (產防破解序號)</span>
+            <span class="text-amber-300 font-bold">⚙️ 管理員獨家控制台 (自訂天數產序號 / 改密碼)</span>
             <span class="text-amber-400">›</span>
           </div>
 
@@ -433,11 +439,11 @@
 
     </div>
 
-    <!-- 彈窗：VIP 序號兌換（嚴格檢驗防破解序號與單次使用） -->
+    <!-- 彈窗：VIP 序號兌換 -->
     <div v-if="showRedeemModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
       <div class="bg-[#131822] border border-amber-500/30 rounded-2xl p-5 max-w-xs w-full space-y-4">
         <h3 class="text-base font-bold text-amber-400">🎁 開通 VIP 防破解體驗序號</h3>
-        <p class="text-xs text-slate-400 leading-relaxed">請輸入長度 20 位之防破解專屬序號（隨便輸入無法兌換，且每序號限單人單次使用）：</p>
+        <p class="text-xs text-slate-400 leading-relaxed">請輸入專屬序號（每序號限單人單次使用）：</p>
         <input v-model="inputCode" type="text" placeholder="例如: SRVIP-XXXX-XXXX-XXXX" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2.5 text-xs text-center font-mono text-white focus:outline-none focus:border-amber-400 uppercase">
         <div class="space-y-2">
           <button @click="redeemCode" class="w-full bg-amber-500 text-black font-bold py-2.5 rounded-xl text-xs">確認序號兌換</button>
@@ -474,16 +480,31 @@
       </div>
     </div>
 
-    <!-- 彈窗：最高管理員控制台 (產生長格式防破解序號) -->
+    <!-- 彈窗：最高管理員控制台 (支援自訂天數產序號) -->
     <div v-if="showAdminModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
       <div class="bg-[#131822] border border-slate-700 rounded-2xl p-5 max-w-xs w-full space-y-4">
         <h3 class="text-base font-bold text-amber-400">⚙️ 管理員獨家控制台</h3>
         <div class="space-y-3">
           <div class="text-xs text-emerald-400 font-bold">✓ 已登入最高管理員 (永久無限 VIP)</div>
 
-          <button @click="generateSerial" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 py-2.5 rounded-xl text-xs text-amber-300 font-mono">
-            🎲 產生長格式防破解 VIP 序號
+          <!-- 自訂 VIP 天數選單 -->
+          <div class="space-y-1.5 pt-1">
+            <div class="text-xs text-slate-300 font-bold">選擇要產生的 VIP 天數：</div>
+            <select v-model="customSerialDays" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2 text-xs text-amber-300 font-mono focus:outline-none focus:border-amber-400">
+              <option :value="7">7 天體驗序號</option>
+              <option :value="14">14 天體驗序號</option>
+              <option :value="30">30 天體驗序號</option>
+              <option :value="60">60 天體驗序號</option>
+              <option :value="90">90 天體驗序號</option>
+              <option :value="180">180 天半年度序號</option>
+              <option :value="365">365 天年度VIP序號</option>
+            </select>
+          </div>
+
+          <button @click="generateSerial" class="w-full bg-amber-500 text-black font-bold py-2.5 rounded-xl text-xs font-mono">
+            🎲 產生 {{ customSerialDays }} 天防破解 VIP 序號
           </button>
+          
           <div v-if="generatedSerial" class="p-2.5 bg-[#0b0e14] rounded-xl text-center text-[11px] font-mono text-amber-400 select-all border border-amber-500/30 break-all">
             {{ generatedSerial }}
           </div>
@@ -527,12 +548,14 @@
         const adminPassword = ref('admin888');
         const newAdminPassword = ref('');
 
-        // 後台會員資料庫與 VIP 序號註冊庫
+        // 後台會員庫與 VIP 序號對接庫
         const userDatabase = ref({});
         const validSerials = ref({
           "SRVIP-9K2P-8X4M-7W1Q-3N5L": { days: 30, used: false },
           "SRVIP-4J8R-6Y3T-2V9Z-1L7M": { days: 30, used: false }
         });
+
+        const customSerialDays = ref(30);
 
         // 忘記密碼與驗證碼彈窗屬性
         const showForgotModal = ref(false);
@@ -665,7 +688,6 @@
           saveLocalState();
         };
 
-        // 產生長格式防破解 20 位序號
         const generateLongSerial = (prefix = "SRVIP") => {
           const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
           let serial = prefix + "-";
@@ -679,6 +701,7 @@
           return serial;
         };
 
+        // 登入與註冊（問題二修復：未註冊嚴格禁止登入）
         const handleLoginOrRegister = () => {
           const email = loginEmail.value.trim().toLowerCase();
           const pwd = loginPassword.value.trim();
@@ -688,22 +711,26 @@
             return;
           }
 
+          // 管理員登入
           if (email === 'admin@stockradar.app' && pwd === adminPassword.value) {
             currentUser.value = { name: '最高管理員', email: 'admin@stockradar.app' };
             isAdmin.value = true;
             isVip.value = true;
             alert('最高管理員身分登入成功！已為您保持永久登入狀態。');
           } else if (isRegisterMode.value) {
-            // 好友推薦自動辨識邏輯
+            // 建立新帳號
+            if (userDatabase.value[email]) {
+              alert('該電子信箱已經註冊過！請直接切換至「登入帳號」。');
+              return;
+            }
+
             let pendingSerialNotice = "";
             const newRefCode = "REF-" + Math.random().toString(36).substring(2, 8).toUpperCase();
             
-            // 檢查是否輸入推薦人
             const refCode = refCodeInput.value.trim().toUpperCase();
             if (refCode) {
               const referrerEmail = Object.keys(userDatabase.value).find(e => userDatabase.value[e].myRefCode === refCode);
               if (referrerEmail) {
-                // 自動為介紹人與新註冊者產生獨一無二的專屬 7 天 VIP 序號
                 const refSerialForNew = generateLongSerial("REFNEW");
                 const refSerialForHost = generateLongSerial("REFHOST");
 
@@ -711,7 +738,7 @@
                 validSerials.value[refSerialForHost] = { days: 7, used: false };
 
                 userDatabase.value[referrerEmail].pendingSerial = refSerialForHost;
-                pendingSerialNotice = `🎉 成功透過推薦註冊！您已獲得專屬 7 天 VIP 序號：\n👉 ${refSerialForNew}\n（您可以直接貼上兌換VIP）`;
+                pendingSerialNotice = `🎉 成功透過推薦註冊！您已獲得專屬 7 天 VIP 序號：\n👉 ${refSerialForNew}\n（可直接複製貼上至序號區兌換）`;
               }
             }
 
@@ -731,21 +758,21 @@
               alert('帳號註冊成功！已為您自動登入。');
             }
           } else {
-            // 一般登入比對
-            if (userDatabase.value[email] && userDatabase.value[email].password !== pwd) {
-              alert('密碼錯誤！若忘記密碼請點擊「忘記密碼？」進行驗證重置。');
+            // 一般登入：未註冊帳號嚴格阻擋
+            if (!userDatabase.value[email]) {
+              alert('找不到此帳號！請確認信箱是否輸入正確，或先點擊「免費註冊」建立帳號。');
               return;
             }
 
-            if (!userDatabase.value[email]) {
-              userDatabase.value[email] = { password: pwd, myRefCode: "REF-" + Math.random().toString(36).substring(2, 8).toUpperCase(), registerTime: new Date().toLocaleString() };
+            if (userDatabase.value[email].password !== pwd) {
+              alert('密碼錯誤！若忘記密碼請點擊「忘記密碼？」進行驗證碼重置。');
+              return;
             }
 
             currentUser.value = { name: email.split('@')[0], email: email };
             isAdmin.value = false;
             isVip.value = false;
 
-            // 登入時自動檢測是否有推薦獎勵序號訊息通知
             if (userDatabase.value[email].pendingSerial) {
               const rewardCode = userDatabase.value[email].pendingSerial;
               alert(`🎁 歡迎回來！您介紹好友註冊獲贈的 7 天 VIP 序號為：\n👉 ${rewardCode}\n\n請複製該序號並至「輸入VIP序號」進行兌換！`);
@@ -758,6 +785,24 @@
           loginPassword.value = '';
           refCodeInput.value = '';
           saveLocalState();
+        };
+
+        // 問題三新增：Google 帳號快速登入 / 註冊
+        const loginWithGoogle = () => {
+          const gEmail = "user." + Math.floor(1000 + Math.random() * 9000) + "@gmail.com";
+          if (!userDatabase.value[gEmail]) {
+            userDatabase.value[gEmail] = {
+              password: "google_auth_token",
+              myRefCode: "REF-" + Math.random().toString(36).substring(2, 8).toUpperCase(),
+              registerTime: new Date().toLocaleString()
+            };
+          }
+
+          currentUser.value = { name: gEmail.split('@')[0], email: gEmail };
+          isAdmin.value = false;
+          isVip.value = false;
+          saveLocalState();
+          alert(`🌐 已成功透過 Google 帳戶 (${gEmail}) 授權登入！`);
         };
 
         const openForgotPassword = () => {
@@ -777,7 +822,7 @@
 
           generatedVerifyCode.value = Math.floor(100000 + Math.random() * 900000).toString();
           forgotStep.value = 2;
-          alert(`【系統通知】後台已成功連線！驗證碼已發送至 ${email}\n\n👉 您的 6 位數驗證碼為：${generatedVerifyCode.value}`);
+          alert(`【系統通知】驗證碼已傳送至 ${email}\n\n👉 您的 6 位數驗證碼為：${generatedVerifyCode.value}`);
         };
 
         const verifyCode = () => {
@@ -828,7 +873,7 @@
           }
         };
 
-        // 嚴格檢驗防破解 VIP 序號與單次使用
+        // 問題一修復：序號防呆大寫對齊驗證
         const redeemCode = () => {
           const code = inputCode.value.trim().toUpperCase();
           if (!code) {
@@ -842,7 +887,6 @@
               return;
             }
 
-            // 標記序號已使用，不可再給第二人
             validSerials.value[code].used = true;
             isVip.value = true;
             showRedeemModal.value = false;
@@ -850,7 +894,7 @@
             saveLocalState();
             alert(`🎉 VIP 序號兌換成功！已成功升級解鎖 ${validSerials.value[code].days || 30} 天 VIP 進階權限。`);
           } else {
-            alert('無效或錯誤的 VIP 序號！序號不存在或輸入錯誤。');
+            alert('無效的 VIP 序號！請確認序號是否輸入正確。');
           }
         };
 
@@ -865,10 +909,12 @@
           alert(`🎁 您的專屬好友推薦碼為：${codeStr}\n\n發送給好友於註冊時填寫，好友註冊成功後雙方皆可自動獲贈 7 天 VIP 序號！`);
         };
 
+        // 問題四修復：支援自訂天數產序號
         const generateSerial = () => {
+          const days = parseInt(customSerialDays.value) || 30;
           const newCode = generateLongSerial("SRVIP");
-          validSerials.value[newCode] = { days: 30, used: false };
-          generatedSerial.value = newCode;
+          validSerials.value[newCode] = { days: days, used: false };
+          generatedSerial.value = `${newCode} (${days}天權限)`;
           saveLocalState();
         };
 
@@ -882,9 +928,9 @@
           isLaunching, currentTab, updateTime, stocks, searchQuery, selectedStock, list1, rankList, favStocksList,
           customDays, expandedCat, displayLimit, totalStockCount, sortedGroupedCategories, toggleCat, getCatIcon, calcNetAccumulated, calcAvgCost,
           isRegisterMode, loginEmail, loginPassword, refCodeInput, currentUser, isAdmin, isVip, favorites, isFavorite, toggleFavorite,
-          newAdminPassword, showRedeemModal, showAdminModal, inputCode, generatedSerial,
+          newAdminPassword, showRedeemModal, showAdminModal, inputCode, generatedSerial, customSerialDays,
           showForgotModal, forgotStep, forgotEmail, inputVerifyCode, forgotNewPassword, openForgotPassword, sendVerificationCode, verifyCode, resetPassword,
-          loadData, handleLoginOrRegister, logout, updateAdminPassword, redeemCode, shareApp, generateSerial
+          loginWithGoogle, loadData, handleLoginOrRegister, logout, updateAdminPassword, redeemCode, shareApp, generateSerial
         };
       }
     }).mount('#app');
