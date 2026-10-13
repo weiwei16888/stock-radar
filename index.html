@@ -16,7 +16,7 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- 引入 Google 官方 One Tap / Identity 登入 SDK -->
+  <!-- Google 官方 SDK -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
@@ -295,7 +295,7 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 4：個股追蹤 (問題一修復：完美同步與精準刪除) ================= -->
+      <!-- ================= 分頁 4：個股追蹤 (問題一修復：預設 100% 空白，徹底刪除台光電與鈞寶，持久儲存) ================= -->
       <main v-if="currentTab === 'fav'" class="p-3 space-y-3 flex-1">
         <div class="flex justify-between items-center">
           <h2 class="text-base font-bold text-white">個人專屬個股追蹤表</h2>
@@ -312,7 +312,6 @@
               <span :class="s.total_net >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold font-mono text-sm">
                 {{ s.total_net >= 0 ? '+' : '' }}{{ s.total_net }} 億
               </span>
-              <!-- 垃圾桶按鈕：點擊立刻刪除且永久不會再出現 -->
               <button @click.stop="toggleFavorite(s.code)" class="text-slate-500 hover:text-rose-400 text-xs px-2 py-1 rounded bg-slate-800 border border-slate-700">
                 🗑️ 刪除
               </button>
@@ -324,7 +323,7 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 5：控制中心 (問題四修復：Google 官方 SDK 視窗跳轉) ================= -->
+      <!-- ================= 分頁 5：控制中心 ================= -->
       <main v-if="currentTab === 'profile'" class="p-3 space-y-4 flex-1">
         <div class="bg-[#131822] border border-slate-800 p-4 rounded-2xl space-y-3">
           <div v-if="currentUser" class="flex justify-between items-center">
@@ -367,7 +366,7 @@
               {{ isRegisterMode ? '建立新帳號' : '登入帳號' }}
             </button>
 
-            <!-- 問題四修復：Google 官方真實 SDK 跳轉授權 -->
+            <!-- Google 帳號快速登入 -->
             <div class="pt-2 border-t border-slate-800 space-y-2">
               <button @click="triggerGoogleAuth" class="w-full bg-white text-slate-900 font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-md hover:bg-slate-100">
                 <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
@@ -377,7 +376,7 @@
           </div>
 
           <button v-if="!isVip" @click="showRedeemModal = true" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-extrabold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1 shadow-lg shadow-amber-500/20">
-            🎁 輸入 VIP 防破解序號開通
+            🎁 輸入 VIP 序號開通
           </button>
         </div>
 
@@ -396,7 +395,7 @@
           </div>
 
           <div @click="showRedeemModal = true" class="p-3.5 flex justify-between items-center cursor-pointer hover:bg-slate-800/30">
-            <span class="text-slate-200 font-medium">🔑 輸入 VIP 8碼體驗序號</span>
+            <span class="text-slate-200 font-medium">🔑 輸入 VIP 體驗序號</span>
             <span class="text-slate-500">›</span>
           </div>
         </div>
@@ -423,12 +422,12 @@
 
     </div>
 
-    <!-- 彈窗：VIP 序號兌換 (問題二修復：8碼數英混合、不分大小寫) -->
+    <!-- 彈窗：VIP 序號兌換 (問題二修復：刪除提示字眼，純淨標題) -->
     <div v-if="showRedeemModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
       <div class="bg-[#131822] border border-amber-500/30 rounded-2xl p-5 max-w-xs w-full space-y-4">
-        <h3 class="text-base font-bold text-amber-400">🎁 開通 VIP 8碼體驗序號</h3>
+        <h3 class="text-base font-bold text-amber-400">🎁 開通 VIP 序號</h3>
         <p class="text-xs text-slate-400 leading-relaxed">請輸入 8 位數英混合序號（不分大小寫）：</p>
-        <input v-model="inputCode" type="text" placeholder="例如: K8M2P9X4" maxlength="12" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2.5 text-sm text-center font-mono font-bold text-amber-300 focus:outline-none focus:border-amber-400 uppercase">
+        <input v-model="inputCode" type="text" placeholder="請輸入序號" maxlength="12" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2.5 text-sm text-center font-mono font-bold text-amber-300 focus:outline-none focus:border-amber-400 uppercase">
         <div class="space-y-2">
           <button @click="redeemCode" class="w-full bg-amber-500 text-black font-extrabold py-2.5 rounded-xl text-xs shadow-lg shadow-amber-500/20">確認序號兌換</button>
           <button @click="showRedeemModal = false" class="w-full bg-slate-800 text-slate-300 py-1.5 rounded-xl text-xs">關閉窗口</button>
@@ -464,7 +463,7 @@
       </div>
     </div>
 
-    <!-- 彈窗：最高管理員控制台 (問題三修復：密碼完全持久化) -->
+    <!-- 彈窗：最高管理員控制台 -->
     <div v-if="showAdminModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
       <div class="bg-[#131822] border border-slate-700 rounded-2xl p-5 max-w-xs w-full space-y-4">
         <h3 class="text-base font-bold text-amber-400">⚙️ 管理員獨家控制台</h3>
@@ -485,16 +484,16 @@
           </div>
 
           <button @click="generateSerial" class="w-full bg-amber-500 text-black font-extrabold py-2.5 rounded-xl text-xs font-mono">
-            🎲 產生 {{ customSerialDays }} 天【8碼VIP序號】
+            🎲 產生 {{ customSerialDays }} 天 VIP 序號
           </button>
           
           <div v-if="generatedSerial" class="p-2.5 bg-[#0b0e14] rounded-xl text-center text-xs font-mono text-amber-400 select-all border border-amber-500/30 break-all">
             {{ generatedSerial }}
           </div>
 
-          <!-- 已產生序號列表庫 -->
+          <!-- 已產生序號列表庫 (點擊一鍵直接開通測試) -->
           <div v-if="Object.keys(validSerials).length" class="space-y-1 pt-2">
-            <div class="text-[11px] text-slate-400 font-bold">後台已存序號清單（點擊即可複製）：</div>
+            <div class="text-[11px] text-slate-400 font-bold">後台已存序號清單（點擊直接帶入兌換）：</div>
             <div class="max-h-24 overflow-y-auto space-y-1">
               <div v-for="(v, code) in validSerials" :key="code" @click="inputCode = code; showRedeemModal = true; showAdminModal = false;" class="text-[10px] font-mono p-1.5 bg-[#0b0e14] rounded border border-slate-800 flex justify-between cursor-pointer hover:border-amber-400">
                 <span class="text-amber-300 font-bold">{{ code }}</span>
@@ -503,7 +502,6 @@
             </div>
           </div>
 
-          <!-- 問題三修復：修改管理員密碼持久化 -->
           <div class="pt-3 border-t border-slate-800 space-y-2">
             <div class="text-xs text-slate-300 font-bold">修改管理員登入密碼：</div>
             <input v-model="newAdminPassword" type="password" placeholder="請輸入新密碼" class="w-full bg-[#0b0e14] border border-slate-700 rounded-xl p-2.5 text-xs focus:outline-none focus:border-amber-400 font-mono text-white">
@@ -526,7 +524,7 @@
         const updateTime = ref('--');
         const stocks = ref({});
         const searchQuery = ref('');
-        const favorites = ref([]); // 問題一修復：初始化空陣列，完全交由專屬帳號儲存
+        const favorites = ref([]); // 問題一修復：100% 預設空白！
         const customDays = ref(5);
         const expandedCat = ref('半導體');
         const displayLimit = ref(20);
@@ -540,12 +538,11 @@
         const isAdmin = ref(false);
         const isVip = ref(false);
 
-        // 問題三修復：管理員密碼從快取讀取，若沒有才用預設值
         const adminPassword = ref(localStorage.getItem('sr_admin_pwd') || 'admin888');
         const newAdminPassword = ref('');
 
-        // 後台會員庫與 8 碼 VIP 序號對接庫
         const userDatabase = ref({});
+        // 問題三徹底重構：初始化預設可用測試序號
         const validSerials = ref({
           "K8M2P9X4": { days: 30, used: false },
           "A7N9W3V2": { days: 30, used: false }
@@ -553,7 +550,6 @@
 
         const customSerialDays = ref(30);
 
-        // 忘記密碼與驗證碼彈窗屬性
         const showForgotModal = ref(false);
         const forgotStep = ref(1);
         const forgotEmail = ref('');
@@ -580,16 +576,17 @@
             if (savedIsAdmin) isAdmin.value = JSON.parse(savedIsAdmin);
             if (savedIsVip) isVip.value = JSON.parse(savedIsVip);
             
-            // 問題一修復：讀取使用者真實自選
+            // 問題一修復：讀取使用者真實自選，沒存過預設就是空陣列
             if (savedFavs) {
               favorites.value = JSON.parse(savedFavs);
             } else {
-              favorites.value = ['6155', '2383'];
+              favorites.value = [];
             }
 
             if (savedDB) userDatabase.value = JSON.parse(savedDB);
             if (savedSerials) {
-              validSerials.value = JSON.parse(savedSerials);
+              const parsed = JSON.parse(savedSerials);
+              validSerials.value = { ...validSerials.value, ...parsed };
             }
           } catch (e) { console.error(e); }
         };
@@ -601,7 +598,7 @@
           localStorage.setItem('sr_favs', JSON.stringify(favorites.value));
           localStorage.setItem('sr_user_db', JSON.stringify(userDatabase.value));
           localStorage.setItem('sr_valid_serials', JSON.stringify(validSerials.value));
-          localStorage.setItem('sr_admin_pwd', adminPassword.value); // 問題三修復：寫入持久化管理員密碼
+          localStorage.setItem('sr_admin_pwd', adminPassword.value);
         };
 
         const loadData = async () => {
@@ -680,7 +677,7 @@
 
         const isFavorite = (code) => favorites.value.includes(code);
         
-        // 問題一修復：刪除/新增自選時 100% 同步持久化儲存
+        // 問題一修復：自選切換並持久儲存
         const toggleFavorite = (code) => {
           if (isFavorite(code)) {
             favorites.value = favorites.value.filter(c => c !== code);
@@ -690,7 +687,6 @@
           saveLocalState();
         };
 
-        // 問題二修復：產生 8 位數英混合簡短序號
         const generate8CodeSerial = () => {
           const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
           let code = "";
@@ -734,7 +730,7 @@
                 validSerials.value[refSerialForHost] = { days: 7, used: false };
 
                 userDatabase.value[referrerEmail].pendingSerial = refSerialForHost;
-                pendingSerialNotice = `🎉 成功透過推薦註冊！您已獲得專屬 7 天 VIP 8碼序號：\n👉 ${refSerialForNew}\n（可直接複製貼上至序號區兌換）`;
+                pendingSerialNotice = `🎉 成功透過推薦註冊！您已獲得專屬 7 天 VIP 序號：\n👉 ${refSerialForNew}\n（可直接複製貼上至序號區兌換）`;
               }
             }
 
@@ -774,7 +770,7 @@
 
             if (userDatabase.value[email].pendingSerial) {
               const rewardCode = userDatabase.value[email].pendingSerial;
-              alert(`🎁 歡迎回來！您介紹好友註冊獲贈的 7 天 VIP 8碼序號為：\n👉 ${rewardCode}\n\n請複製該序號並至「輸入VIP序號」進行兌換！`);
+              alert(`🎁 歡迎回來！您介紹好友註冊獲贈的 7 天 VIP 序號為：\n👉 ${rewardCode}\n\n請複製該序號並至「輸入VIP序號」進行兌換！`);
               delete userDatabase.value[email].pendingSerial;
               saveLocalState();
             } else {
@@ -787,36 +783,30 @@
           saveLocalState();
         };
 
-        // 問題四修復：Google 官方真實授權跳轉視窗與自動辨識
         const triggerGoogleAuth = () => {
           if (window.google && google.accounts && google.accounts.id) {
             google.accounts.id.initialize({
-              client_id: "888888888888-fakeclientid.apps.googleusercontent.com", // Google 官方 SDK 啟動標頭
+              client_id: "888888888888-fakeclientid.apps.googleusercontent.com",
               callback: handleGoogleResponse
             });
-            // 真正觸發 Google 帳戶選擇授權視窗跳轉
             google.accounts.id.prompt((notification) => {
               if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                // 若被瀏覽器阻擋，啟動官方預備跳轉頁
                 const fakeGoogleEmail = "user." + Math.floor(1000 + Math.random() * 9000) + "@gmail.com";
                 handleGoogleLoginSuccess(fakeGoogleEmail);
               }
             });
           } else {
-            // 備用安全跳轉
             const fakeGoogleEmail = "user." + Math.floor(1000 + Math.random() * 9000) + "@gmail.com";
             handleGoogleLoginSuccess(fakeGoogleEmail);
           }
         };
 
         const handleGoogleResponse = (response) => {
-          // 解析 Google 回傳 Token
           const fakeGoogleEmail = "google.user@gmail.com";
           handleGoogleLoginSuccess(fakeGoogleEmail);
         };
 
         const handleGoogleLoginSuccess = (gEmail) => {
-          // 後台自動辨識該 Google 帳號是否曾註冊過
           const isExistingUser = !!userDatabase.value[gEmail];
 
           if (!isExistingUser) {
@@ -896,42 +886,45 @@
           alert('已成功登出！');
         };
 
-        // 問題三修復：修改管理員密碼寫入持久化快取
         const updateAdminPassword = () => {
           if (newAdminPassword.value.trim()) {
             adminPassword.value = newAdminPassword.value.trim();
-            saveLocalState(); // 寫入持久化
-            alert(`管理員密碼更新成功！\n新密碼：${adminPassword.value}\n系統已永久儲存，未來重開 App 均使用此新密碼。`);
+            saveLocalState();
+            alert(`管理員密碼更新成功！\n新密碼：${adminPassword.value}`);
             newAdminPassword.value = '';
           } else {
             alert('請輸入新密碼！');
           }
         };
 
-        // 問題二修復：8碼不分大小寫兌換機制
+        // 問題三徹底重構：全域不分大小寫、零空格、強效比對
         const redeemCode = () => {
-          loadLocalState(); // 讀取最新庫
+          loadLocalState(); // 強制同步最新快取庫
           const rawInput = inputCode.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
           
           if (!rawInput) {
-            alert('請輸入 VIP 8碼體驗序號！');
+            alert('請輸入 VIP 序號！');
             return;
           }
 
-          if (validSerials.value[rawInput]) {
-            if (validSerials.value[rawInput].used) {
+          // 尋找全域 Key
+          const foundKey = Object.keys(validSerials.value).find(k => k.toUpperCase().replace(/[^A-Z0-9]/g, '') === rawInput);
+
+          if (foundKey) {
+            const serialObj = validSerials.value[foundKey];
+            if (serialObj.used) {
               alert('該序號已經被使用過，無法重複兌換！');
               return;
             }
 
-            validSerials.value[rawInput].used = true;
+            serialObj.used = true;
             isVip.value = true;
             showRedeemModal.value = false;
             inputCode.value = '';
             saveLocalState();
-            alert(`🎉 VIP 8碼序號兌換成功！已成功升級解鎖 ${validSerials.value[rawInput].days || 30} 天 VIP 進階權限。`);
+            alert(`🎉 VIP 序號兌換成功！已成功升級解鎖 ${serialObj.days || 30} 天 VIP 進階權限。`);
           } else {
-            alert(`無效的 VIP 序號！\n您輸入的序號：${rawInput}\n請確認管理員產生的 8 碼序號是否正確。`);
+            alert(`無效的 VIP 序號！\n您輸入的序號為：${rawInput}\n請確認序號是否正確。`);
           }
         };
 
@@ -943,10 +936,10 @@
           } else {
             codeStr = "REF-888888";
           }
-          alert(`🎁 您的專屬好友推薦碼為：${codeStr}\n\n發送給好友於註冊時填寫，好友註冊成功後雙方皆可自動獲贈 7 天 VIP 8碼序號！`);
+          alert(`🎁 您的專屬好友推薦碼為：${codeStr}\n\n發送給好友於註冊時填寫，好友註冊成功後雙方皆可自動獲贈 7 天 VIP 序號！`);
         };
 
-        // 問題二修復：管理員產生 8 碼數英混合序號
+        // 問題三：管理員產號並即時寫入雙重庫
         const generateSerial = () => {
           const days = parseInt(customSerialDays.value) || 30;
           const newCode = generate8CodeSerial();
@@ -954,8 +947,8 @@
           validSerials.value[newCode] = { days: days, used: false };
           generatedSerial.value = `${newCode} (${days}天VIP)`;
           
-          saveLocalState(); // 立刻存入 localStorage
-          alert(`✅ 成功產生 ${days} 天【8碼VIP序號】：\n\n👉 ${newCode}\n\n已成功紀錄入系統，可不分大小寫立刻進行兌換！`);
+          saveLocalState(); // 寫入快取
+          alert(`✅ 成功產生 ${days} 天 VIP 序號：\n\n👉 ${newCode}\n\n已被紀錄入系統，可不分大小寫立刻進行兌換！`);
         };
 
         onMounted(() => {
