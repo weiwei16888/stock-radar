@@ -7,9 +7,16 @@
   "theme_color": "#0b0e14",
   "icons": [
     {
-      "src": "https://api.iconify.design/ri:radar-fill.svg?color=%23f59e0b",
+      "src": "https://api.iconify.design/ri:line-chart-fill.svg?color=%23f59e0b",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://api.iconify.design/ri:line-chart-fill.svg?color=%23f59e0b",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
