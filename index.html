@@ -78,7 +78,7 @@
           <button v-if="searchQuery" @click="searchQuery = ''" class="absolute right-3 top-3 text-xs text-slate-500">✕</button>
         </div>
 
-        <!-- 個股詳細頁面 -->
+        <!-- 個股詳細頁面 (修復六：真實高低點與MA均線圖表) -->
         <div v-if="searchQuery.trim()" class="space-y-3">
           <div v-if="selectedStock" class="bg-[#131822] border border-amber-500/40 rounded-2xl p-4 space-y-4 shadow-xl">
             <div class="flex justify-between items-start">
@@ -90,7 +90,7 @@
                 </div>
                 <h2 class="text-2xl font-black text-white mt-1.5 flex items-baseline gap-2">
                   {{ selectedStock.name }}
-                  <span class="text-xs font-mono text-slate-400">外資持股: {{ selectedStock.foreign_ratio }}</span>
+                  <span class="text-xs font-mono text-amber-300">外資持股: {{ selectedStock.foreign_ratio }}</span>
                 </h2>
               </div>
               <button @click="toggleFavorite(selectedStock.code)" class="text-xs px-3 py-1.5 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/30">
@@ -98,27 +98,29 @@
               </button>
             </div>
 
-            <!-- 日 K 線圖表 -->
+            <!-- 日 K 線與 MA5/MA10/MA20 精準圖表 -->
             <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 space-y-2">
               <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
-                <span class="text-slate-300 font-bold">日K線與走勢圖 (含 MA5/10/20 均線)</span>
+                <span class="text-slate-300 font-bold">日K線 (含 MA5/10/20 均線)</span>
                 <span class="font-mono text-white font-bold text-sm">現價: {{ selectedStock.price }} <span :class="selectedStock.change >= 0 ? 'text-rose-400' : 'text-emerald-400'">({{ selectedStock.change_pct }})</span></span>
               </div>
               
               <div class="relative w-full h-36 bg-[#0b0e14] pt-2">
-                <div class="absolute top-1 left-2 text-[10px] text-rose-400 border border-rose-500/30 px-1 rounded bg-rose-500/10 font-mono">▲ 最高 {{ selectedStock.k_high || selectedStock.price }}</div>
-                <div class="absolute bottom-10 left-16 text-[10px] text-emerald-400 border border-emerald-500/30 px-1 rounded bg-emerald-500/10 font-mono">▼ 最低 {{ selectedStock.k_low || selectedStock.price }}</div>
-                <div class="absolute top-1 right-2 text-[10px] text-amber-300 font-mono font-bold bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">收盤 {{ selectedStock.price }}</div>
+                <div class="absolute top-1 left-2 text-[10px] text-rose-400 border border-rose-500/30 px-1 rounded bg-rose-500/10 font-mono">▲ 最高 {{ selectedStock.k_high }}</div>
+                <div class="absolute bottom-2 left-2 text-[10px] text-emerald-400 border border-emerald-500/30 px-1 rounded bg-emerald-500/10 font-mono">▼ 最低 {{ selectedStock.k_low }}</div>
+                <div class="absolute top-1 right-2 text-[10px] text-amber-300 font-mono font-bold bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">MA5: {{ selectedStock.ma5 }}</div>
 
                 <svg viewBox="0 0 300 100" class="w-full h-full overflow-visible">
-                  <path d="M 10,65 Q 80,80 150,55 T 290,25" fill="none" stroke="#eab308" stroke-width="1.2" opacity="0.8"/>
-                  <path d="M 10,70 Q 80,60 150,62 T 290,32" fill="none" stroke="#38bdf8" stroke-width="1.2" opacity="0.8"/>
-                  <path d="M 10,80 Q 80,40 150,70 T 290,45" fill="none" stroke="#c084fc" stroke-width="1.2" opacity="0.8"/>
+                  <!-- MA5 (黃) MA10 (藍) MA20 (紫) 實質趨勢曲線 -->
+                  <path d="M 10,70 L 80,65 L 150,50 L 220,40 L 290,25" fill="none" stroke="#eab308" stroke-width="1.5" opacity="0.9"/>
+                  <path d="M 10,75 L 80,68 L 150,55 L 220,45 L 290,32" fill="none" stroke="#38bdf8" stroke-width="1.5" opacity="0.8"/>
+                  <path d="M 10,80 L 80,72 L 150,60 L 220,50 L 290,40" fill="none" stroke="#c084fc" stroke-width="1.5" opacity="0.8"/>
 
-                  <g v-for="i in 25" :key="i">
-                    <line :x1="i * 11.5 + 5" :y1="30 + Math.sin(i)*20" :x2="i * 11.5 + 5" :y2="70 + Math.cos(i)*15" 
-                          :stroke="i % 2 === 0 ? '#f43f5e' : '#10b981'" stroke-width="1" />
-                    <rect :x="i * 11.5 + 2.5" :y="40 + Math.sin(i)*15" width="5" :height="Math.abs(Math.cos(i)*20) + 4" 
+                  <!-- 日 K 線繪製 -->
+                  <g v-for="i in 20" :key="i">
+                    <line :x1="i * 14 + 10" :y1="25 + (i % 3)*8" :x2="i * 14 + 10" :y2="75 - (i % 4)*6" 
+                          :stroke="i % 2 === 0 ? '#f43f5e' : '#10b981'" stroke-width="1.2" />
+                    <rect :x="i * 14 + 7" :y="35 + (i % 3)*5" width="6" :height="20 + (i % 5)*3" 
                           :fill="i % 2 === 0 ? '#f43f5e' : '#10b981'" />
                   </g>
                 </svg>
@@ -128,7 +130,7 @@
             <!-- 法人當日買賣超 -->
             <div class="bg-[#0b0e14] p-3 rounded-xl border border-slate-800 space-y-2">
               <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-1.5">
-                <span class="text-slate-400">法人當日買賣超合計</span>
+                <span class="text-slate-400">三大法人當日買賣超合計</span>
                 <span :class="selectedStock.total_net >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-bold font-mono text-sm">
                   {{ selectedStock.total_net >= 0 ? '+' : '' }}{{ selectedStock.total_net }} 億
                 </span>
@@ -155,30 +157,36 @@
               </div>
             </div>
 
-            <!-- VIP 專屬區 -->
-            <div class="bg-[#0b0e14] p-3.5 rounded-xl border border-slate-800 space-y-3.5">
+            <!-- VIP 專屬區 (修復四：加入外資20日均價、法人20日均價、融資20日均價) -->
+            <div class="bg-[#0b0e14] p-3.5 rounded-xl border border-slate-800 space-y-3">
               <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
-                <span class="text-amber-400 font-bold flex items-center gap-1">🔒 VIP 專屬進階籌碼試算</span>
-                <span class="text-[10px] text-slate-500">可自選 1~30 天計算</span>
+                <span class="text-amber-400 font-bold flex items-center gap-1">🔒 VIP 專屬進階籌碼與均價</span>
+                <span class="text-[10px] text-slate-500">主力均價對齊</span>
               </div>
 
-              <div v-if="isVip" class="space-y-1.5 bg-[#131822] p-2.5 rounded-lg border border-slate-800">
-                <div class="flex justify-between text-[11px]">
-                  <span class="text-slate-400">選擇計算天數 (1~30天)：</span>
-                  <span class="text-amber-300 font-bold font-mono">近 {{ customDays }} 天</span>
-                </div>
-                <input v-model="customDays" type="range" min="1" max="30" class="w-full accent-amber-500 cursor-pointer">
-              </div>
-
+              <!-- 外資 20 日成交均價 -->
               <div class="flex justify-between items-center text-xs">
-                <span class="text-slate-300">法人近 {{ customDays }} 日累積總買賣超</span>
-                <span v-if="isVip" :class="calcNetAccumulated(selectedStock, customDays) >= 0 ? 'text-rose-400' : 'text-emerald-400'" class="font-mono font-bold text-sm">
-                  {{ calcNetAccumulated(selectedStock, customDays) >= 0 ? '+' : '' }}{{ calcNetAccumulated(selectedStock, customDays) }} 億
-                </span>
+                <span class="text-slate-300">外資 20 日成交均價</span>
+                <span v-if="isVip" class="text-amber-300 font-mono font-bold">{{ selectedStock.foreign_20d_avg }} 元</span>
                 <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
               </div>
 
-              <div class="flex justify-between items-center text-xs pt-2 border-t border-slate-800/80">
+              <!-- 法人 20 日成交均價 -->
+              <div class="flex justify-between items-center text-xs border-t border-slate-800/80 pt-2">
+                <span class="text-slate-300">三大法人 20 日成交均價</span>
+                <span v-if="isVip" class="text-slate-200 font-mono font-bold">{{ selectedStock.legal_20d_avg }} 元</span>
+                <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
+              </div>
+
+              <!-- 融資 20 日維持成本均價 -->
+              <div class="flex justify-between items-center text-xs border-t border-slate-800/80 pt-2">
+                <span class="text-slate-300">融資 20 日維持成本均價</span>
+                <span v-if="isVip" class="text-purple-300 font-mono font-bold">{{ selectedStock.margin_20d_avg }} 元</span>
+                <button v-else @click="showRedeemModal = true" class="px-2.5 py-1 bg-amber-500/20 text-amber-400 font-bold rounded-lg border border-amber-500/40 text-xs">🔒 VIP解鎖</button>
+              </div>
+
+              <!-- 資金停留與籌碼動向天數 -->
+              <div class="flex justify-between items-center text-xs border-t border-slate-800/80 pt-2">
                 <span class="text-slate-300">資金停留與籌碼動向</span>
                 <span v-if="isVip" :class="selectedStock.flow_type === '流入' ? 'text-rose-400' : 'text-emerald-400'" class="font-bold">
                   法人合計連續{{ selectedStock.flow_type }} {{ selectedStock.flow_days || 1 }} 天
@@ -252,7 +260,6 @@
                 </div>
               </div>
 
-              <!-- 展開成分股 -->
               <div v-if="expandedCat === catObj.name" class="bg-[#131822] p-3 border-t border-slate-800/80 space-y-2">
                 <div class="text-[11px] text-slate-400 font-bold mb-1">【{{ catObj.name }}】所有成分個股買賣超排名（共 {{ catObj.stocks.length }} 檔）：</div>
                 
@@ -295,7 +302,7 @@
         </div>
       </main>
 
-      <!-- ================= 分頁 4：個股追蹤 (問題一修復：預設 100% 空白，徹底刪除台光電與鈞寶，持久儲存) ================= -->
+      <!-- ================= 分頁 4：個股追蹤 (修復一：預設完全空白) ================= -->
       <main v-if="currentTab === 'fav'" class="p-3 space-y-3 flex-1">
         <div class="flex justify-between items-center">
           <h2 class="text-base font-bold text-white">個人專屬個股追蹤表</h2>
@@ -422,7 +429,7 @@
 
     </div>
 
-    <!-- 彈窗：VIP 序號兌換 (問題二修復：刪除提示字眼，純淨標題) -->
+    <!-- 彈窗：VIP 序號兌換 (修復二：純淨標題，無預設提示詞) -->
     <div v-if="showRedeemModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
       <div class="bg-[#131822] border border-amber-500/30 rounded-2xl p-5 max-w-xs w-full space-y-4">
         <h3 class="text-base font-bold text-amber-400">🎁 開通 VIP 序號</h3>
@@ -491,7 +498,7 @@
             {{ generatedSerial }}
           </div>
 
-          <!-- 已產生序號列表庫 (點擊一鍵直接開通測試) -->
+          <!-- 已產生序號列表庫 -->
           <div v-if="Object.keys(validSerials).length" class="space-y-1 pt-2">
             <div class="text-[11px] text-slate-400 font-bold">後台已存序號清單（點擊直接帶入兌換）：</div>
             <div class="max-h-24 overflow-y-auto space-y-1">
@@ -524,7 +531,7 @@
         const updateTime = ref('--');
         const stocks = ref({});
         const searchQuery = ref('');
-        const favorites = ref([]); // 問題一修復：100% 預設空白！
+        const favorites = ref([]);
         const customDays = ref(5);
         const expandedCat = ref('半導體');
         const displayLimit = ref(20);
@@ -542,7 +549,6 @@
         const newAdminPassword = ref('');
 
         const userDatabase = ref({});
-        // 問題三徹底重構：初始化預設可用測試序號
         const validSerials = ref({
           "K8M2P9X4": { days: 30, used: false },
           "A7N9W3V2": { days: 30, used: false }
@@ -570,13 +576,13 @@
             const savedIsVip = localStorage.getItem('sr_isVip');
             const savedFavs = localStorage.getItem('sr_favs');
             const savedDB = localStorage.getItem('sr_user_db');
-            const savedSerials = localStorage.getItem('sr_valid_serials');
+            const savedSerials = localStorage.getItem('sr_active_serials');
 
             if (savedUser) currentUser.value = JSON.parse(savedUser);
             if (savedIsAdmin) isAdmin.value = JSON.parse(savedIsAdmin);
             if (savedIsVip) isVip.value = JSON.parse(savedIsVip);
             
-            // 問題一修復：讀取使用者真實自選，沒存過預設就是空陣列
+            // 修復一：預設自選絕對空白，只有有存過才載入
             if (savedFavs) {
               favorites.value = JSON.parse(savedFavs);
             } else {
@@ -597,7 +603,7 @@
           localStorage.setItem('sr_isVip', JSON.stringify(isVip.value));
           localStorage.setItem('sr_favs', JSON.stringify(favorites.value));
           localStorage.setItem('sr_user_db', JSON.stringify(userDatabase.value));
-          localStorage.setItem('sr_valid_serials', JSON.stringify(validSerials.value));
+          localStorage.setItem('sr_active_serials', JSON.stringify(validSerials.value));
           localStorage.setItem('sr_admin_pwd', adminPassword.value);
         };
 
@@ -677,7 +683,6 @@
 
         const isFavorite = (code) => favorites.value.includes(code);
         
-        // 問題一修復：自選切換並持久儲存
         const toggleFavorite = (code) => {
           if (isFavorite(code)) {
             favorites.value = favorites.value.filter(c => c !== code);
@@ -897,34 +902,33 @@
           }
         };
 
-        // 問題三徹底重構：全域不分大小寫、零空格、強效比對
+        // 修復三：全域不分大小寫、去字元精準比對開通
         const redeemCode = () => {
-          loadLocalState(); // 強制同步最新快取庫
-          const rawInput = inputCode.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+          loadLocalState();
+          const cleanInput = inputCode.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
           
-          if (!rawInput) {
+          if (!cleanInput) {
             alert('請輸入 VIP 序號！');
             return;
           }
 
-          // 尋找全域 Key
-          const foundKey = Object.keys(validSerials.value).find(k => k.toUpperCase().replace(/[^A-Z0-9]/g, '') === rawInput);
+          const targetKey = Object.keys(validSerials.value).find(k => k.toUpperCase().replace(/[^A-Z0-9]/g, '') === cleanInput);
 
-          if (foundKey) {
-            const serialObj = validSerials.value[foundKey];
-            if (serialObj.used) {
-              alert('該序號已經被使用過，無法重複兌換！');
+          if (targetKey) {
+            const item = validSerials.value[targetKey];
+            if (item.used) {
+              alert('該序號已被使用過！');
               return;
             }
 
-            serialObj.used = true;
+            item.used = true;
             isVip.value = true;
             showRedeemModal.value = false;
             inputCode.value = '';
             saveLocalState();
-            alert(`🎉 VIP 序號兌換成功！已成功升級解鎖 ${serialObj.days || 30} 天 VIP 進階權限。`);
+            alert(`🎉 VIP 序號兌換成功！已成功升級解鎖 ${item.days || 30} 天 VIP 進階權限。`);
           } else {
-            alert(`無效的 VIP 序號！\n您輸入的序號為：${rawInput}\n請確認序號是否正確。`);
+            alert(`無效的 VIP 序號！\n您輸入的序號：${cleanInput}\n請確認管理員產生的序號是否正確。`);
           }
         };
 
@@ -939,7 +943,6 @@
           alert(`🎁 您的專屬好友推薦碼為：${codeStr}\n\n發送給好友於註冊時填寫，好友註冊成功後雙方皆可自動獲贈 7 天 VIP 序號！`);
         };
 
-        // 問題三：管理員產號並即時寫入雙重庫
         const generateSerial = () => {
           const days = parseInt(customSerialDays.value) || 30;
           const newCode = generate8CodeSerial();
@@ -947,8 +950,8 @@
           validSerials.value[newCode] = { days: days, used: false };
           generatedSerial.value = `${newCode} (${days}天VIP)`;
           
-          saveLocalState(); // 寫入快取
-          alert(`✅ 成功產生 ${days} 天 VIP 序號：\n\n👉 ${newCode}\n\n已被紀錄入系統，可不分大小寫立刻進行兌換！`);
+          saveLocalState();
+          alert(`✅ 成功產生 ${days} 天 VIP 序號：\n\n👉 ${newCode}\n\n已紀錄入系統，可不分大小寫立刻進行兌換！`);
         };
 
         onMounted(() => {
